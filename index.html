@@ -1421,6 +1421,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .urgent-item { grid-template-columns:1fr auto; }
 }
 .urgent-empty { text-align:center; padding:14px 10px; color:var(--text3); font-size:13px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -1576,8 +1577,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="urgent-hero" id="urgentSection">
     <div class="urgent-hero-header">
       <div class="urgent-hero-title">⚡ Contas Urgentes a Pagar</div>
-      <button class="btn btn-sm" id="urgentToggleFormBtn" onclick="urgentToggleForm()" style="font-size:11px;padding:6px 14px">+ Adicionar</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-sm" onclick="aiUploadTrigger()" title="Analisar conta com IA" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,rgba(201,154,62,0.2),rgba(201,154,62,0.08));border-color:rgba(201,154,62,0.4);color:var(--gold-bright)">🤖 IA</button>
+        <button class="btn btn-sm" id="urgentToggleFormBtn" onclick="urgentToggleForm()" style="font-size:11px;padding:6px 14px">+ Manual</button>
+      </div>
     </div>
+
+    <!-- IA: upload oculto + painel de resultado -->
+    <input type="file" id="aiFileInput" accept="image/*,.pdf" style="display:none" onchange="aiHandleFile(this)">
+    <div id="aiPanel" style="display:none;margin-bottom:14px">
+      <!-- estado: carregando -->
+      <div id="aiLoading" style="display:none;text-align:center;padding:20px 0">
+        <div style="display:inline-block;width:28px;height:28px;border:3px solid rgba(201,154,62,0.2);border-top-color:#C99A3E;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3)">Analisando com IA...</div>
+      </div>
+      <!-- estado: resultado -->
+      <div id="aiResult" style="display:none;background:rgba(201,154,62,0.06);border:1px solid rgba(201,154,62,0.2);border-radius:14px;padding:16px">
+        <div style="font-size:11px;color:var(--gold-bright);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🤖 IA extraiu estes dados — confirme:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Descrição</div>
+            <input type="text" id="aiDesc" style="width:100%;height:34px;font-size:13px">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Valor (R$)</div>
+            <input type="number" id="aiValor" min="0" step="0.01" style="width:100%;height:34px;font-size:13px">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Vencimento</div>
+            <input type="date" id="aiVenc" style="width:100%;height:34px;font-size:13px">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Categoria</div>
+            <input type="text" id="aiCat" style="width:100%;height:34px;font-size:13px" readonly>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="aiConfirm()" style="flex:1">✓ Adicionar à lista</button>
+          <button class="btn btn-sm" onclick="aiCancel()" style="padding:6px 14px">✕</button>
+        </div>
+      </div>
+      <!-- estado: erro -->
+      <div id="aiError" style="display:none;background:rgba(220,53,69,0.08);border:1px solid rgba(220,53,69,0.25);border-radius:12px;padding:14px;font-size:12px;color:#e07070"></div>
+    </div>
+
     <div id="urgentList"></div>
     <div id="urgentFormWrap" style="display:none">
       <div class="urgent-form">
@@ -4770,6 +4813,80 @@ async function initApp() {
   await _bootApp();
 }
 initApp();
+
+// ── Agente IA — Análise de Contas ────────────────
+function aiUploadTrigger() {
+  document.getElementById('aiFileInput').value = '';
+  document.getElementById('aiFileInput').click();
+}
+
+async function aiHandleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const panel = document.getElementById('aiPanel');
+  const loading = document.getElementById('aiLoading');
+  const result = document.getElementById('aiResult');
+  const error = document.getElementById('aiError');
+
+  panel.style.display = '';
+  loading.style.display = '';
+  result.style.display = 'none';
+  error.style.display = 'none';
+
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64, mediaType: file.type || 'image/jpeg' })
+    });
+
+    const json = await resp.json();
+    loading.style.display = 'none';
+
+    if (!resp.ok || !json.ok) {
+      error.style.display = '';
+      error.textContent = '⚠ ' + (json.error || 'Erro ao analisar o documento. Tente uma imagem mais nítida.');
+      return;
+    }
+
+    const d = json.data;
+    document.getElementById('aiDesc').value = d.descricao || '';
+    document.getElementById('aiValor').value = d.valor || '';
+    document.getElementById('aiVenc').value = d.vencimento || '';
+    document.getElementById('aiCat').value = d.categoria || '';
+    result.style.display = '';
+
+  } catch (err) {
+    loading.style.display = 'none';
+    error.style.display = '';
+    error.textContent = '⚠ Erro de conexão: ' + err.message;
+  }
+}
+
+function aiConfirm() {
+  const desc = document.getElementById('aiDesc').value.trim();
+  const valor = parseFloat(document.getElementById('aiValor').value) || 0;
+  const venc = document.getElementById('aiVenc').value;
+  if (!desc) { alert('Preencha a descrição.'); return; }
+  if (!S.contasUrgentes) S.contasUrgentes = [];
+  S.contasUrgentes.push({ id: Date.now(), desc, valor, vencimento: venc });
+  save();
+  aiCancel();
+  renderContasUrgentes();
+}
+
+function aiCancel() {
+  document.getElementById('aiPanel').style.display = 'none';
+  document.getElementById('aiFileInput').value = '';
+}
 
 // ── Service Worker (PWA) ─────────────────────────
 if ('serviceWorker' in navigator) {

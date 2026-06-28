@@ -1,3 +1,7 @@
 {
-  "name": "planilha-estoica"
+  "functions": {
+    "api/analyze.js": {
+      "maxDuration": 30
+    }
+  }
 }

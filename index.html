@@ -1531,9 +1531,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
   <div class="quote-ticker" id="quoteTicker" style="display:none"></div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-    <!-- Botão instalar PWA — aparece só quando disponível -->
+    <!-- Botão instalar PWA — sempre visível -->
     <button id="pwaInstallBtn" onclick="pwaInstall()" title="Instalar App" style="
-      display:none;align-items:center;gap:6px;
+      display:flex;align-items:center;gap:6px;
       background:linear-gradient(135deg,rgba(201,154,62,0.18),rgba(201,154,62,0.08));
       border:1px solid rgba(201,154,62,0.35);border-radius:10px;
       color:var(--gold-bright);font-size:11px;font-weight:700;
@@ -4802,15 +4802,56 @@ async function pwaInstall() {
   if (_installPrompt) {
     _installPrompt.prompt();
     const { outcome } = await _installPrompt.userChoice;
-    if (outcome === 'accepted') _installPrompt = null;
-  } else {
-    // iOS Safari: mostrar instruções
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const msg = isIOS
-      ? '📱 No Safari: toque em Compartilhar (□↑) → "Adicionar à Tela de Início"'
-      : '📱 No Chrome: menu (⋮) → "Adicionar à tela inicial" ou "Instalar app"';
-    alert(msg);
+    if (outcome === 'accepted') {
+      _installPrompt = null;
+      document.getElementById('pwaInstallBtn').style.display = 'none';
+    }
+    return;
   }
+  // Sem prompt nativo: mostrar modal com instruções visuais
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const modal = document.createElement('div');
+  modal.style.cssText = `position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.7);padding:16px`;
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  modal.innerHTML = `
+    <div style="width:100%;max-width:420px;background:#1A1008;border:1px solid rgba(201,154,62,0.3);border-radius:24px 24px 16px 16px;padding:28px 24px 32px;font-family:inherit">
+      <div style="font-size:22px;font-weight:900;color:#C99A3E;margin-bottom:6px">⬇ Instalar App</div>
+      <div style="font-size:13px;color:rgba(196,168,130,0.7);margin-bottom:24px">Adicione à tela inicial para abrir como app nativo</div>
+      ${isIOS ? `
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">1️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Toque no botão <strong style="color:#C99A3E">Compartilhar</strong> na barra do Safari<br><span style="font-size:20px">□↑</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">2️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Role e toque em <strong style="color:#C99A3E">"Adicionar à Tela de Início"</strong></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">3️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Toque em <strong style="color:#C99A3E">"Adicionar"</strong> — o ícone aparece na tela inicial ✓</div>
+          </div>
+          <div style="font-size:11px;color:rgba(196,168,130,0.45);margin-top:4px;text-align:center">⚠ Use o Safari — Chrome no iOS não suporta instalação</div>
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">1️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Toque no menu <strong style="color:#C99A3E">⋮</strong> no Chrome</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">2️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Toque em <strong style="color:#C99A3E">"Adicionar à tela inicial"</strong> ou <strong style="color:#C99A3E">"Instalar app"</strong></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border-radius:12px;padding:14px">
+            <span style="font-size:26px">3️⃣</span>
+            <div style="font-size:13px;color:#C4A882">Confirme — o ícone aparece na tela inicial ✓</div>
+          </div>
+        </div>
+      `}
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;margin-top:20px;padding:14px;background:rgba(201,154,62,0.15);border:1px solid rgba(201,154,62,0.3);border-radius:12px;color:#C99A3E;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Entendido</button>
+    </div>`;
+  document.body.appendChild(modal);
 }
 </script>
 

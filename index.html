@@ -4888,6 +4888,33 @@ function aiCancel() {
   document.getElementById('aiFileInput').value = '';
 }
 
+// ── PWA Install ──────────────────────────────────
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  const btn = document.getElementById('pwaFab');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwaFab');
+  if (btn) btn.style.display = 'none';
+  _deferredPrompt = null;
+});
+async function pwaInstall() {
+  if (_deferredPrompt) {
+    _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      _deferredPrompt = null;
+      const btn = document.getElementById('pwaFab');
+      if (btn) btn.style.display = 'none';
+    }
+  } else {
+    alert('Abra o menu ⋮ do Chrome → "Instalar app" ou "Adicionar à tela inicial"');
+  }
+}
+
 // ── Service Worker (PWA) ─────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -5138,6 +5165,16 @@ async function pwaInstall() {
   </div>
 </div>
 
+<!-- Botão flutuante instalar PWA (aparece quando Chrome libera o prompt) -->
+<button id="pwaFab" onclick="pwaInstall()" style="
+  display:none;position:fixed;bottom:24px;right:20px;z-index:9000;
+  align-items:center;gap:8px;
+  background:linear-gradient(135deg,#C99A3E,#A07830);
+  border:none;border-radius:50px;padding:13px 22px;
+  color:#0A0704;font-size:13px;font-weight:800;
+  font-family:inherit;cursor:pointer;white-space:nowrap;
+  box-shadow:0 4px 24px rgba(201,154,62,0.5);
+">⬇ Instalar App</button>
 
 </body>
 </html>

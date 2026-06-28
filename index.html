@@ -4932,25 +4932,35 @@ async function iaAnalisarFinancas() {
   setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
   // Coleta todos os dados financeiros do app
-  const orcItens = (S.orcamento || []);
-  const receitas = orcItens.filter(i => i.tipo === 'receita' || i.categoria === 'Receita');
-  const despesas = orcItens.filter(i => i.tipo !== 'receita' && i.categoria !== 'Receita');
-  const totalReceita = receitas.reduce((s, i) => s + (parseFloat(i.valor)||0), 0) || saldoMes() + (S.despesas||0);
-  const totalDespesa = despesas.reduce((s, i) => s + (parseFloat(i.valor)||0), 0) || (S.despesas||0);
+  const receitasArr = (S.receitas || []);
+  const despesasArr = Array.isArray(S.despesas) ? S.despesas : [];
+
+  const totalReceita = receitasArr.reduce((s, i) => s + (parseFloat(i.valor)||0), 0);
+  const totalDespesa = despesasArr.reduce((s, i) => s + (parseFloat(i.valor)||0), 0);
+
+  // Agrupa despesas por categoria para a IA analisar melhor
+  const despesasPorCategoria = despesasArr.reduce((acc, d) => {
+    const cat = d.cat || d.categoria || 'Outros';
+    if (!acc[cat]) acc[cat] = { total: 0, itens: [] };
+    acc[cat].total += parseFloat(d.valor)||0;
+    acc[cat].itens.push({ desc: d.desc, valor: d.valor, data: d.data });
+    return acc;
+  }, {});
 
   const dados = {
     resumo: {
-      rendaMensal: S.renda || totalReceita,
-      despesasMensais: S.despesas || totalDespesa,
-      saldoMensal: saldoMes ? saldoMes() : (S.renda - S.despesas),
+      rendaMensal: totalReceita,
+      rendaFutura: 'R$ 2.300 a partir de agosto/2026',
+      totalDespesasLancadas: totalDespesa,
       patrimônioLíquido: S.patrimonio || 0,
-      taxaPoupanca: S.taxaPoupanca || 0,
+      reservaEmergencia: S.reserva || 0,
     },
-    orcamento: orcItens.map(i => ({ desc: i.desc||i.descricao, valor: i.valor, categoria: i.categoria, tipo: i.tipo })),
+    receitas: receitasArr.map(r => ({ desc: r.desc, valor: r.valor, data: r.data })),
+    despesasPorCategoria,
+    despesasDetalhadas: despesasArr.map(d => ({ desc: d.desc, valor: d.valor, cat: d.cat||d.categoria, data: d.data })),
     dividas: (S.dividas || []).map(d => ({ desc: d.desc||d.nome, saldoDevedor: d.saldo||d.valor, parcela: d.parcela, taxaJuros: d.juros||d.taxa })),
     contasUrgentes: (S.contasUrgentes || []).map(c => ({ desc: c.desc, valor: c.valor, vencimento: c.vencimento })),
     metaFIRE: S.metaFire || null,
-    reservaEmergencia: S.reserva || 0,
     dataAnalise: new Date().toLocaleDateString('pt-BR'),
   };
 

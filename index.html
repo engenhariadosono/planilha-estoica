@@ -1387,6 +1387,40 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (max-width: 768px) {
   .voice-btn { min-height: 48px !important; }
 }
+
+/* ── Contas Urgentes ── */
+.urgent-hero {
+  background: linear-gradient(135deg, rgba(192,98,72,0.12) 0%, rgba(201,154,62,0.06) 100%);
+  border: 1px solid rgba(192,98,72,0.22);
+  border-radius: 18px; padding: 18px 20px; margin-bottom: 16px;
+}
+.urgent-hero-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:10px; flex-wrap:wrap; }
+.urgent-hero-title { font-size:13px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:.6px; display:flex; align-items:center; gap:8px; }
+.urgent-item {
+  display:grid; grid-template-columns:1fr auto; align-items:start; gap:10px;
+  padding: 12px 14px; border-radius:12px; margin-bottom:8px;
+  background: var(--card); border-left: 3px solid transparent;
+  transition: box-shadow .2s;
+}
+.urgent-item:last-child { margin-bottom:0; }
+.urgent-item.critical { border-left-color: var(--red);  background: rgba(192,98,72,0.07); }
+.urgent-item.warning  { border-left-color: var(--gold); background: rgba(201,154,62,0.07); }
+.urgent-item.safe     { border-left-color: var(--green);background: rgba(78,170,114,0.06); }
+.urgent-item-desc { font-size:14px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.urgent-item-valor { font-size:19px; font-weight:900; letter-spacing:-.5px; }
+.urgent-item-proj { font-size:11px; color:var(--text3); margin-top:4px; line-height:1.5; }
+.urgent-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:100px; margin-bottom:4px; }
+.urgent-badge.critical { background:rgba(192,98,72,0.18); color:var(--red); }
+.urgent-badge.warning  { background:rgba(201,154,62,0.18); color:var(--gold-bright); }
+.urgent-badge.safe     { background:rgba(78,170,114,0.18); color:var(--green); }
+.urgent-remove { background:none; border:none; color:var(--text3); font-size:16px; cursor:pointer; padding:4px; opacity:.6; transition:opacity .2s; line-height:1; }
+.urgent-remove:hover { opacity:1; color:var(--red); }
+.urgent-form { display:grid; grid-template-columns:1fr 130px 140px auto; gap:8px; margin-top:12px; align-items:end; }
+@media(max-width:600px){
+  .urgent-form { grid-template-columns:1fr 1fr; }
+  .urgent-item { grid-template-columns:1fr auto; }
+}
+.urgent-empty { text-align:center; padding:14px 10px; color:var(--text3); font-size:13px; }
 </style>
 </head>
 <body>
@@ -1535,6 +1569,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="fw-quote">
       <div id="fwQuoteText"></div>
       <div class="fw-quote-author" id="fwQuoteAuthor"></div>
+    </div>
+  </div>
+
+  <!-- ⚡ CONTAS URGENTES -->
+  <div class="urgent-hero" id="urgentSection">
+    <div class="urgent-hero-header">
+      <div class="urgent-hero-title">⚡ Contas Urgentes a Pagar</div>
+      <button class="btn btn-sm" id="urgentToggleFormBtn" onclick="urgentToggleForm()" style="font-size:11px;padding:6px 14px">+ Adicionar</button>
+    </div>
+    <div id="urgentList"></div>
+    <div id="urgentFormWrap" style="display:none">
+      <div class="urgent-form">
+        <div class="form-group" style="margin:0"><label style="font-size:10px">Descrição</label><input type="text" id="urgDesc" placeholder="Ex: Aluguel, Cartão..." style="height:36px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:10px">Valor (R$)</label><input type="number" id="urgValor" placeholder="0,00" min="0" style="height:36px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:10px">Vencimento</label><input type="date" id="urgVenc" style="height:36px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:10px">&nbsp;</label><button class="btn btn-primary btn-sm" onclick="addContaUrgente()" style="height:36px;white-space:nowrap">Salvar</button></div>
+      </div>
     </div>
   </div>
 
@@ -2144,7 +2195,8 @@ let S = {
   reserva: { acumulado: 0, metaCustom: 0, prazo: 12 },
   orcamentoCats: {},
   marcos: [],
-  checkIn: { ultimo: '', streak: 0 }
+  checkIn: { ultimo: '', streak: 0 },
+  contasUrgentes: []
 };
 
 // Debounce: localStorage imediato, Supabase após 600ms de inatividade
@@ -3141,6 +3193,98 @@ function renderPatrimonioEvolutionChart() {
 // ══════════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// CONTAS URGENTES
+// ══════════════════════════════════════════════════
+function urgentToggleForm() {
+  const w = document.getElementById('urgentFormWrap');
+  const btn = document.getElementById('urgentToggleFormBtn');
+  if (!w) return;
+  const open = w.style.display === 'none';
+  w.style.display = open ? '' : 'none';
+  if (btn) btn.textContent = open ? '✕ Cancelar' : '+ Adicionar';
+  if (open) {
+    // Pré-preenche data com hoje +7 dias
+    const d = new Date(); d.setDate(d.getDate()+7);
+    const urgVenc = document.getElementById('urgVenc');
+    if (urgVenc && !urgVenc.value) urgVenc.value = d.toISOString().split('T')[0];
+    setTimeout(() => document.getElementById('urgDesc')?.focus(), 60);
+  }
+}
+
+function addContaUrgente() {
+  const desc  = document.getElementById('urgDesc')?.value?.trim();
+  const valor = parseFloat(document.getElementById('urgValor')?.value);
+  const venc  = document.getElementById('urgVenc')?.value;
+  if (!desc || !valor || valor <= 0 || !venc) return;
+  if (!S.contasUrgentes) S.contasUrgentes = [];
+  S.contasUrgentes.push({ id: Date.now(), desc, valor, vencimento: venc });
+  save();
+  // Limpa form e fecha
+  document.getElementById('urgDesc').value = '';
+  document.getElementById('urgValor').value = '';
+  document.getElementById('urgVenc').value = '';
+  urgentToggleForm();
+  renderContasUrgentes();
+}
+
+function removeContaUrgente(id) {
+  S.contasUrgentes = (S.contasUrgentes||[]).filter(c => c.id !== id);
+  save(); renderContasUrgentes();
+}
+
+function renderContasUrgentes() {
+  const el = document.getElementById('urgentList');
+  if (!el) return;
+  const contas = (S.contasUrgentes||[]);
+  if (!contas.length) {
+    el.innerHTML = '<div class="urgent-empty">Nenhuma conta cadastrada. Clique em <strong>+ Adicionar</strong> para registrar uma conta urgente.</div>';
+    return;
+  }
+  const saldoAtual  = saldoMes();
+  const today       = new Date(); today.setHours(0,0,0,0);
+  const sorted      = [...contas].sort((a,b) => new Date(a.vencimento)-new Date(b.vencimento));
+
+  el.innerHTML = sorted.map(c => {
+    const due      = new Date(c.vencimento); due.setHours(0,0,0,0);
+    const daysLeft = Math.round((due-today)/(1000*60*60*24));
+    const vencida  = daysLeft < 0;
+    const status   = vencida || daysLeft <= 5 ? 'critical' : daysLeft <= 20 ? 'warning' : 'safe';
+    const badge    = vencida
+      ? `<span class="urgent-badge critical">🔴 VENCIDA há ${Math.abs(daysLeft)}d</span>`
+      : daysLeft === 0
+        ? `<span class="urgent-badge critical">🔴 VENCE HOJE</span>`
+        : daysLeft <= 5
+          ? `<span class="urgent-badge critical">🔴 Vence em ${daysLeft}d</span>`
+          : daysLeft <= 20
+            ? `<span class="urgent-badge warning">⚠️ Vence em ${daysLeft}d</span>`
+            : `<span class="urgent-badge safe">✅ Vence em ${daysLeft}d</span>`;
+
+    let proj = '';
+    if (saldoAtual >= c.valor) {
+      proj = `<span style="color:var(--green)">✓ Saldo atual cobre esta conta</span>`;
+    } else if (saldoAtual > 0) {
+      const falta = c.valor - saldoAtual;
+      const meses = Math.ceil(falta / saldoAtual);
+      const dtQuit = new Date(today); dtQuit.setMonth(dtQuit.getMonth()+meses);
+      const dtStr  = dtQuit.toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
+      proj = `<span style="color:var(--red)">Falta ${fmt(falta)}</span> · Quitado em ~${meses} ${meses===1?'mês':'meses'} <span style="color:var(--text3)">(${dtStr})</span>`;
+    } else {
+      proj = `<span style="color:var(--red)">Sem saldo mensal registrado — cadastre receitas</span>`;
+    }
+
+    return `<div class="urgent-item ${status}">
+      <div>
+        ${badge}
+        <div class="urgent-item-desc">${c.desc}</div>
+        <div class="urgent-item-valor" style="color:${status==='safe'?'var(--gold-bright)':'var(--red)'}">${fmt(c.valor)}</div>
+        <div class="urgent-item-proj">${proj}</div>
+      </div>
+      <button class="urgent-remove" onclick="removeContaUrgente(${c.id})" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+}
+
 function renderDashboard() {
   if (!appReady) return;
   const renda = totalRec(), desp = totalDesp(), saldo = saldoMes(), taxa = taxaPoupa();
@@ -3199,6 +3343,7 @@ function renderDashboard() {
   renderMiniChart(data10, 'dashProjectionChart');
 
   renderPatrimonioEvolutionChart();
+  renderContasUrgentes();
 }
 
 function renderMiniChart(data, elId) {

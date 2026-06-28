@@ -1531,15 +1531,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
   <div class="quote-ticker" id="quoteTicker" style="display:none"></div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-    <!-- Botão instalar PWA — sempre visível -->
-    <button id="pwaInstallBtn" onclick="pwaInstall()" title="Instalar App" style="
-      display:flex;align-items:center;gap:6px;
-      background:linear-gradient(135deg,rgba(201,154,62,0.18),rgba(201,154,62,0.08));
-      border:1px solid rgba(201,154,62,0.35);border-radius:10px;
-      color:var(--gold-bright);font-size:11px;font-weight:700;
-      padding:6px 12px;cursor:pointer;white-space:nowrap;
-      font-family:inherit;letter-spacing:.3px;
-    ">⬇ Instalar</button>
     <button class="focus-btn" id="focusBtn" onclick="toggleFocus()" title="Modo Foco">◎</button>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar Dark/Light">
       <span class="tt-icon" id="themeIcon">☀️</span>
@@ -5029,5 +5020,22 @@ async function pwaInstall() {
     <button class="ci-close" onclick="closeCheckin()">Fechar</button>
   </div>
 </div>
+
+<!-- Botão flutuante instalar PWA -->
+<button id="pwaInstallBtn" onclick="pwaInstall()" title="Instalar App no celular" style="
+  position:fixed;bottom:24px;right:20px;z-index:9000;
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#C99A3E,#A07830);
+  border:none;border-radius:50px;
+  color:#0A0704;font-size:13px;font-weight:800;
+  padding:12px 20px;cursor:pointer;white-space:nowrap;
+  font-family:inherit;letter-spacing:.3px;
+  box-shadow:0 4px 20px rgba(201,154,62,0.45);
+  transition:transform .15s,box-shadow .15s;
+" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 28px rgba(201,154,62,0.6)'"
+   onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(201,154,62,0.45)'">
+  ⬇ Instalar App
+</button>
+
 </body>
 </html>

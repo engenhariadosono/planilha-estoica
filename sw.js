@@ -1,30 +1,29 @@
-const CACHE = 'pe-v5';
-const CDN   = 'pe-cdn-v5';
+const CACHE = 'pe-v6';
+const CDN   = 'pe-cdn-v6';
 const CORE  = ['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
-  self.skipWaiting(); // assume controle imediatamente
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(ks =>
       Promise.all(ks.filter(k => k !== CACHE && k !== CDN).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim()) // toma controle de todas as abas abertas
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Navegação: network-first com fallback para cache
-  // Garante que o usuário sempre receba a versão mais nova quando há conexão
+  // Navegação: sempre network-first sem fallback para cache (garante versão nova)
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-store' })
         .then(r => {
-          caches.open(CACHE).then(c => c.put('/', r.clone()));
+          if (r.ok) caches.open(CACHE).then(c => c.put('/', r.clone()));
           return r;
         })
         .catch(() => caches.match('/'))

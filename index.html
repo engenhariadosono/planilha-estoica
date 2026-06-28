@@ -4975,12 +4975,48 @@ async function iaAnalisarFinancas() {
       body.innerHTML = `<div style="color:#e07070">⚠ ${json.error || 'Erro ao analisar. Tente novamente.'}</div>`;
       return;
     }
-    // Renderiza markdown simples
-    const html = json.analise
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/### (.*)/g, '<div style="font-size:14px;font-weight:800;color:var(--gold-bright);margin:18px 0 8px">$1</div>')
-      .replace(/## (.*)/g, '<div style="font-size:15px;font-weight:900;color:var(--gold-bright);margin:20px 0 8px">$1</div>')
-      .replace(/# (.*)/g, '<div style="font-size:16px;font-weight:900;color:var(--gold-bright);margin:20px 0 10px">$1</div>')
+    // Renderiza markdown com suporte a tabelas
+    function renderMd(md) {
+      const lines = md.split('\n');
+      const out = [];
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        // Detecta início de tabela markdown: linha com | e próxima linha é separador |---|
+        if (/^\|.+\|/.test(line) && lines[i+1] && /^\|[-| :]+\|/.test(lines[i+1])) {
+          const headers = line.split('|').filter((_, j, a) => j > 0 && j < a.length - 1).map(h => h.trim());
+          i += 2; // pula header e separador
+          const rows = [];
+          while (i < lines.length && /^\|.+\|/.test(lines[i])) {
+            rows.push(lines[i].split('|').filter((_, j, a) => j > 0 && j < a.length - 1).map(c => c.trim()));
+            i++;
+          }
+          let tbl = `<div style="overflow-x:auto;margin:12px 0"><table style="width:100%;border-collapse:collapse;font-size:12px">`;
+          tbl += `<thead><tr>${headers.map(h => `<th style="padding:8px 12px;text-align:left;border-bottom:1px solid rgba(201,154,62,0.3);color:var(--gold-bright);font-weight:700;white-space:nowrap">${h}</th>`).join('')}</tr></thead>`;
+          tbl += `<tbody>${rows.map((r, ri) => `<tr style="background:${ri%2===0?'rgba(255,255,255,0.03)':'transparent'}">${r.map(c => `<td style="padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--text2)">${applyInline(c)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+          tbl += `</table></div>`;
+          out.push(tbl);
+        } else {
+          out.push(line);
+          i++;
+        }
+      }
+      return out.join('\n');
+    }
+    function applyInline(t) {
+      return t
+        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text1)">$1</strong>')
+        .replace(/`([^`]+)`/g, '<code style="background:rgba(201,154,62,0.12);padding:1px 5px;border-radius:4px;font-size:11px">$1</code>');
+    }
+    const processed = renderMd(json.analise);
+    const html = processed
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text1)">$1</strong>')
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(201,154,62,0.12);padding:1px 5px;border-radius:4px;font-size:11px">$1</code>')
+      .replace(/^### (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:var(--gold-bright);margin:18px 0 6px;text-transform:uppercase;letter-spacing:.5px">$1</div>')
+      .replace(/^## (.+)$/gm, '<div style="font-size:15px;font-weight:900;color:var(--gold-bright);margin:22px 0 8px">$1</div>')
+      .replace(/^# (.+)$/gm, '<div style="font-size:16px;font-weight:900;color:var(--gold-bright);margin:24px 0 10px;border-bottom:1px solid rgba(201,154,62,0.2);padding-bottom:6px">$1</div>')
+      .replace(/^> (.+)$/gm, '<blockquote style="border-left:3px solid rgba(201,154,62,0.4);margin:10px 0;padding:6px 12px;color:var(--text3);font-style:italic;font-size:12px">$1</blockquote>')
+      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:16px 0">')
       .replace(/\n/g, '<br>');
     body.innerHTML = html;
     // Rola até o resultado após renderizar

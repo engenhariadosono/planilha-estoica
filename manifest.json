@@ -1,0 +1,20 @@
+{
+  "name": "Planilha Estoica",
+  "short_name": "Estoica",
+  "description": "Dashboard de finanças pessoais com filosofia estoica",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#2B2420",
+  "theme_color": "#C99A3E",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" },
+    { "src": "/icon.svg",     "type": "image/svg+xml", "sizes": "any" }
+  ]
+}

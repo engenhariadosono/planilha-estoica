@@ -1456,7 +1456,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <!-- ═══ NAVIGATION ═══ -->
 <header class="nav-header">
-  <div class="nav-brand">
+  <div class="nav-brand" onclick="showGatekeeper()" style="cursor:pointer" title="Bloquear / Autenticar">
     <span style="font-size:20px;line-height:1;filter:drop-shadow(0 0 8px rgba(201,154,62,0.5))">⚖️</span>
     <span>Planilha Estoica<span> · Crescimento & Liberdade</span></span>
   </div>
@@ -3595,8 +3595,45 @@ function _unlockApp() {
   const ov  = document.getElementById('authOverlay');
   const box = document.getElementById('authBox');
   if (box) { box.style.transform = 'scale(1.04)'; box.style.opacity = '0'; }
-  if (ov)  { ov.classList.add('hiding'); setTimeout(() => ov.remove(), 720); }
+  if (ov)  {
+    ov.classList.add('hiding');
+    setTimeout(() => {
+      ov.style.display = 'none';
+      ov.classList.remove('hiding');
+      if (box) { box.style.transform = ''; box.style.opacity = ''; }
+    }, 720);
+  }
   _bootApp();
+}
+
+// Abre o overlay de autenticação ao clicar no logo da nav
+function showGatekeeper() {
+  const ov = document.getElementById('authOverlay');
+  if (!ov) return;
+  ov.style.display = '';
+  ov.classList.remove('hiding');
+  const box = document.getElementById('authBox');
+  if (box) { box.style.transform = ''; box.style.opacity = ''; }
+  _preloadSplashImage();
+  const hasPass = !!localStorage.getItem(_AK);
+  if (!hasPass) {
+    if (box) box.classList.remove('gk-mode');
+    document.getElementById('authSetup').style.display = '';
+    document.getElementById('authLogin').style.display = 'none';
+    setTimeout(() => document.getElementById('setupPwd')?.focus(), 100);
+    return;
+  }
+  if (box) box.classList.add('gk-mode');
+  document.getElementById('authLogin').style.display = '';
+  document.getElementById('authSetup').style.display = 'none';
+  const hasCred = _webAuthnOk() && !!localStorage.getItem(_CK);
+  if (hasCred) {
+    loginBiometric();
+  } else {
+    const lbl = document.getElementById('gkTapLabel');
+    if (lbl) lbl.textContent = 'Toque para inserir sua chave de acesso';
+    gkTogglePwd();
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -4557,9 +4594,10 @@ function closeCheckin() {
 
 async function initApp() {
   initTheme();
-  const isAuthed = !!sessionStorage.getItem('pe-authed');
-  if (!isAuthed) { initAuth(); return; }
-  document.getElementById('authOverlay')?.remove();
+  // App abre direto — auth é ativada pelo clique no logo ⚖️ na barra de navegação
+  sessionStorage.setItem('pe-authed', '1');
+  const ov = document.getElementById('authOverlay');
+  if (ov) ov.style.display = 'none';
   await _bootApp();
 }
 initApp();

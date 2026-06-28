@@ -1531,6 +1531,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
   <div class="quote-ticker" id="quoteTicker" style="display:none"></div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <!-- Botão instalar PWA — aparece só quando disponível -->
+    <button id="pwaInstallBtn" onclick="pwaInstall()" title="Instalar App" style="
+      display:none;align-items:center;gap:6px;
+      background:linear-gradient(135deg,rgba(201,154,62,0.18),rgba(201,154,62,0.08));
+      border:1px solid rgba(201,154,62,0.35);border-radius:10px;
+      color:var(--gold-bright);font-size:11px;font-weight:700;
+      padding:6px 12px;cursor:pointer;white-space:nowrap;
+      font-family:inherit;letter-spacing:.3px;
+    ">⬇ Instalar</button>
     <button class="focus-btn" id="focusBtn" onclick="toggleFocus()" title="Modo Foco">◎</button>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar Dark/Light">
       <span class="tt-icon" id="themeIcon">☀️</span>
@@ -4774,6 +4783,34 @@ initApp();
 // ── Service Worker (PWA) ─────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ── PWA Install Prompt ───────────────────────────
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'none';
+  _installPrompt = null;
+});
+async function pwaInstall() {
+  if (_installPrompt) {
+    _installPrompt.prompt();
+    const { outcome } = await _installPrompt.userChoice;
+    if (outcome === 'accepted') _installPrompt = null;
+  } else {
+    // iOS Safari: mostrar instruções
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const msg = isIOS
+      ? '📱 No Safari: toque em Compartilhar (□↑) → "Adicionar à Tela de Início"'
+      : '📱 No Chrome: menu (⋮) → "Adicionar à tela inicial" ou "Instalar app"';
+    alert(msg);
+  }
 }
 </script>
 

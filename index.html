@@ -1398,6 +1398,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="auth-overlay"></div>
   <div class="auth-grain"></div>
 
+  <!-- Botão fechar (só aparece quando overlay é aberto via logo) -->
+  <button onclick="closeAuthOverlay()" style="
+    position:absolute;top:18px;right:18px;z-index:10;
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(10,7,4,0.65);border:1px solid rgba(201,154,62,0.25);
+    color:rgba(196,168,130,0.85);font-size:20px;line-height:1;
+    cursor:pointer;backdrop-filter:blur(8px);display:flex;
+    align-items:center;justify-content:center;
+    transition:background 0.2s,border-color 0.2s;
+  " onmouseover="this.style.background='rgba(201,154,62,0.18)';this.style.borderColor='rgba(201,154,62,0.5)'"
+     onmouseout="this.style.background='rgba(10,7,4,0.65)';this.style.borderColor='rgba(201,154,62,0.25)'"
+     title="Fechar">✕</button>
+
   <div id="authBox">
     <div class="auth-logo">⚖️</div>
     <div class="auth-brand">Planilha Estoica</div>
@@ -3604,6 +3617,17 @@ function _unlockApp() {
     }, 720);
   }
   _bootApp();
+}
+
+// Fecha o overlay sem autenticar (volta ao dashboard)
+function closeAuthOverlay() {
+  const ov = document.getElementById('authOverlay');
+  if (!ov) return;
+  ov.classList.add('hiding');
+  setTimeout(() => {
+    ov.style.display = 'none';
+    ov.classList.remove('hiding');
+  }, 680);
 }
 
 // Abre o overlay de autenticação ao clicar no logo da nav

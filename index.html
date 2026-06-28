@@ -1632,6 +1632,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
   </div>
 
+  <!-- Card Agente IA Financeiro -->
+  <div style="background:linear-gradient(135deg,rgba(201,154,62,0.1),rgba(201,154,62,0.04));border:1px solid rgba(201,154,62,0.25);border-radius:20px;padding:20px 22px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--gold-bright);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🤖 Agente IA Financeiro</div>
+        <div style="font-size:12px;color:var(--text3)">Análise completa de fluxo de caixa, dívidas e projeção FIRE</div>
+      </div>
+      <button onclick="iaAnalisarFinancas()" style="
+        background:linear-gradient(135deg,#C99A3E,#A07830);border:none;border-radius:12px;
+        padding:10px 20px;color:#0A0704;font-size:12px;font-weight:800;
+        cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
+        box-shadow:0 2px 12px rgba(201,154,62,0.35)
+      ">⚡ Analisar Agora</button>
+    </div>
+  </div>
+
+  <!-- Modal análise IA -->
+  <div id="iaModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);overflow-y:auto;padding:16px">
+    <div style="max-width:680px;margin:0 auto;background:var(--surface1);border:1px solid rgba(201,154,62,0.25);border-radius:24px;padding:28px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:16px;font-weight:900;color:var(--gold-bright)">🤖 Análise Financeira IA</div>
+        <button onclick="document.getElementById('iaModal').style.display='none'" style="background:rgba(255,255,255,0.07);border:none;border-radius:50%;width:34px;height:34px;color:var(--text3);font-size:18px;cursor:pointer;font-family:inherit">✕</button>
+      </div>
+      <div id="iaModalBody" style="font-size:13px;line-height:1.75;color:var(--text2)"></div>
+    </div>
+  </div>
+
   <div class="stoic-card">
     <div class="stoic-quote" id="stoicQuote">Riqueza não consiste em ter grandes posses, mas em ter poucas necessidades.</div>
     <div class="stoic-author" id="stoicAuthor">— Epictetus</div>
@@ -4886,6 +4913,63 @@ function aiConfirm() {
 function aiCancel() {
   document.getElementById('aiPanel').style.display = 'none';
   document.getElementById('aiFileInput').value = '';
+}
+
+// ── Agente IA Financeiro ─────────────────────────
+async function iaAnalisarFinancas() {
+  const modal = document.getElementById('iaModal');
+  const body  = document.getElementById('iaModalBody');
+  modal.style.display = '';
+  body.innerHTML = `<div style="text-align:center;padding:32px 0">
+    <div style="display:inline-block;width:32px;height:32px;border:3px solid rgba(201,154,62,0.2);border-top-color:#C99A3E;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="margin-top:12px;color:var(--text3);font-size:13px">Analisando suas finanças...</div>
+  </div>`;
+
+  // Coleta todos os dados financeiros do app
+  const orcItens = (S.orcamento || []);
+  const receitas = orcItens.filter(i => i.tipo === 'receita' || i.categoria === 'Receita');
+  const despesas = orcItens.filter(i => i.tipo !== 'receita' && i.categoria !== 'Receita');
+  const totalReceita = receitas.reduce((s, i) => s + (parseFloat(i.valor)||0), 0) || saldoMes() + (S.despesas||0);
+  const totalDespesa = despesas.reduce((s, i) => s + (parseFloat(i.valor)||0), 0) || (S.despesas||0);
+
+  const dados = {
+    resumo: {
+      rendaMensal: S.renda || totalReceita,
+      despesasMensais: S.despesas || totalDespesa,
+      saldoMensal: saldoMes ? saldoMes() : (S.renda - S.despesas),
+      patrimônioLíquido: S.patrimonio || 0,
+      taxaPoupanca: S.taxaPoupanca || 0,
+    },
+    orcamento: orcItens.map(i => ({ desc: i.desc||i.descricao, valor: i.valor, categoria: i.categoria, tipo: i.tipo })),
+    dividas: (S.dividas || []).map(d => ({ desc: d.desc||d.nome, saldoDevedor: d.saldo||d.valor, parcela: d.parcela, taxaJuros: d.juros||d.taxa })),
+    contasUrgentes: (S.contasUrgentes || []).map(c => ({ desc: c.desc, valor: c.valor, vencimento: c.vencimento })),
+    metaFIRE: S.metaFire || null,
+    reservaEmergencia: S.reserva || 0,
+    dataAnalise: new Date().toLocaleDateString('pt-BR'),
+  };
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dados })
+    });
+    const json = await resp.json();
+    if (!resp.ok || !json.ok) {
+      body.innerHTML = `<div style="color:#e07070">⚠ ${json.error || 'Erro ao analisar. Tente novamente.'}</div>`;
+      return;
+    }
+    // Renderiza markdown simples
+    const html = json.analise
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/### (.*)/g, '<div style="font-size:14px;font-weight:800;color:var(--gold-bright);margin:18px 0 8px">$1</div>')
+      .replace(/## (.*)/g, '<div style="font-size:15px;font-weight:900;color:var(--gold-bright);margin:20px 0 8px">$1</div>')
+      .replace(/# (.*)/g, '<div style="font-size:16px;font-weight:900;color:var(--gold-bright);margin:20px 0 10px">$1</div>')
+      .replace(/\n/g, '<br>');
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<div style="color:#e07070">⚠ Erro de conexão: ${err.message}</div>`;
+  }
 }
 
 // ── PWA Install ──────────────────────────────────

@@ -5026,7 +5026,12 @@ async function iaAnalisarFinancas() {
   }
 }
 
-// ── PWA Install ──────────────────────────────────
+// ── Service Worker (PWA) ─────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ── PWA Install Prompt ───────────────────────────
 let _deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
@@ -5047,37 +5052,6 @@ async function pwaInstall() {
       _deferredPrompt = null;
       const btn = document.getElementById('pwaFab');
       if (btn) btn.style.display = 'none';
-    }
-  } else {
-    alert('Abra o menu ⋮ do Chrome → "Instalar app" ou "Adicionar à tela inicial"');
-  }
-}
-
-// ── Service Worker (PWA) ─────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
-
-// ── PWA Install Prompt ───────────────────────────
-let _installPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _installPrompt = e;
-  const btn = document.getElementById('pwaInstallBtn');
-  if (btn) btn.style.display = 'flex';
-});
-window.addEventListener('appinstalled', () => {
-  const btn = document.getElementById('pwaInstallBtn');
-  if (btn) btn.style.display = 'none';
-  _installPrompt = null;
-});
-async function pwaInstall() {
-  if (_installPrompt) {
-    _installPrompt.prompt();
-    const { outcome } = await _installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      _installPrompt = null;
-      document.getElementById('pwaInstallBtn').style.display = 'none';
     }
     return;
   }

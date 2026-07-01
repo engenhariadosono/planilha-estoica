@@ -128,17 +128,50 @@ body {
   text-shadow: 0 0 28px rgba(201,154,62,0.35);
 }
 .nav-brand span { color: var(--text3); font-weight: 400; font-size: 11px; letter-spacing: 0.2px; }
-.nav-tabs { display: flex; gap: 3px; }
+.nav-tabs-dock { flex: 1 1 auto; display: flex; justify-content: center; min-width: 0; }
+.nav-tabs {
+  display: flex; gap: 2px; padding: 5px;
+  background: linear-gradient(155deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008));
+  border: 1px solid rgba(201,154,62,0.14);
+  border-radius: 100px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset;
+}
 .nav-tab {
   background: none; border: none; color: var(--text3);
-  font-size: 13px; font-weight: 500; padding: 7px 15px;
-  border-radius: 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; padding: 8px 14px;
+  border-radius: 100px; cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+  transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), background 0.25s ease, color 0.25s ease, box-shadow 0.3s ease;
 }
-.nav-tab:hover { color: var(--text2); background: var(--surface2); }
+.nav-tab:hover {
+  color: var(--text2); background: var(--surface2);
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.3);
+  z-index: 1;
+}
 .nav-tab.active {
-  color: var(--gold-bright); background: rgba(201,154,62,0.10);
-  box-shadow: 0 0 0 1px rgba(201,154,62,0.18) inset;
+  color: var(--gold-bright); background: rgba(201,154,62,0.12);
+  box-shadow: 0 0 0 1px rgba(201,154,62,0.22) inset, 0 6px 20px rgba(201,154,62,0.18);
 }
+.nav-tab.active:hover { transform: translateY(-3px) scale(1.08); }
+.nt-icon {
+  display: inline-block; font-size: 14px; line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(201,154,62,0.35));
+  animation: navFloat 3.4s ease-in-out infinite;
+  transition: transform 0.32s cubic-bezier(.34,1.56,.64,1);
+}
+.nav-tab:hover .nt-icon { transform: scale(1.3) rotate(-6deg); }
+.nav-tab:nth-child(1) .nt-icon { animation-delay: 0s; }
+.nav-tab:nth-child(2) .nt-icon { animation-delay: .25s; }
+.nav-tab:nth-child(3) .nt-icon { animation-delay: .5s; }
+.nav-tab:nth-child(4) .nt-icon { animation-delay: .75s; }
+.nav-tab:nth-child(5) .nt-icon { animation-delay: 1s; }
+.nav-tab:nth-child(6) .nt-icon { animation-delay: 1.25s; }
+.nav-tab:nth-child(7) .nt-icon { animation-delay: 1.5s; }
+.nav-tab:nth-child(8) .nt-icon { animation-delay: 1.75s; }
+@keyframes navFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@media (prefers-reduced-motion: reduce) { .nt-icon { animation: none; } }
 .quote-ticker { font-size: 11px; color: var(--text3); font-style: italic; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── LAYOUT ─── */
@@ -344,6 +377,19 @@ select option { background: var(--surface2); }
 }
 .stoic-quote { font-size: 14px; font-style: italic; color: var(--text2); line-height: 1.8; }
 .stoic-author { font-size: 11px; color: var(--gold); font-weight: 700; margin-top: 8px; letter-spacing: 0.6px; text-transform: uppercase; }
+
+/* ─── DASHBOARD: TOGGLE DE DETALHES (minimalismo) ─── */
+.dash-details-toggle {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin: 4px 0 20px; padding: 11px 18px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 100px; color: var(--text3);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+  cursor: pointer; transition: all 0.25s ease;
+}
+.dash-details-toggle:hover { color: var(--gold-bright); background: rgba(201,154,62,0.08); border-color: rgba(201,154,62,0.25); }
+.ddt-chev { display: inline-block; transition: transform 0.3s ease; }
+.dash-details-toggle.open .ddt-chev { transform: rotate(180deg); }
 
 /* ─── SECTION HEADER ─── */
 .section-header {
@@ -1508,16 +1554,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <span style="font-size:20px;line-height:1;filter:drop-shadow(0 0 8px rgba(201,154,62,0.5))">⚖️</span>
     <span>Planilha Estoica<span> · Crescimento & Liberdade</span></span>
   </div>
-  <nav class="nav-tabs">
-    <button class="nav-tab active"  onclick="showSection('dashboard',this)">Dashboard</button>
-    <button class="nav-tab" onclick="showSection('orcamento',this)">Orçamento</button>
-    <button class="nav-tab" onclick="showSection('dividas',this)">Dívidas</button>
-    <button class="nav-tab" onclick="showSection('juros',this)">Juros Compostos</button>
-    <button class="nav-tab" onclick="showSection('metas',this)">Metas FIRE</button>
-    <button class="nav-tab" onclick="showSection('reserva',this)">🛡️ Reserva</button>
-    <button class="nav-tab" onclick="showSection('virtudes',this)">⚡ Virtudes</button>
-    <button class="nav-tab" onclick="showSection('futuro',this)">🏛️ Futuro</button>
-  </nav>
+  <div class="nav-tabs-dock">
+    <nav class="nav-tabs">
+      <button class="nav-tab active"  onclick="showSection('dashboard',this)"><span class="nt-icon">📊</span>Dashboard</button>
+      <button class="nav-tab" onclick="showSection('orcamento',this)"><span class="nt-icon">💰</span>Orçamento</button>
+      <button class="nav-tab" onclick="showSection('dividas',this)"><span class="nt-icon">💳</span>Dívidas</button>
+      <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
+      <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
+      <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
+      <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
+      <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
+    </nav>
+  </div>
   <div class="nav-search" id="navSearch">
     <div class="ns-wrap">
       <span class="ns-icon">🔍</span>
@@ -1632,25 +1680,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
   </div>
 
-  <!-- Card Agente IA Financeiro -->
-  <div style="background:linear-gradient(135deg,rgba(201,154,62,0.1),rgba(201,154,62,0.04));border:1px solid rgba(201,154,62,0.25);border-radius:20px;padding:20px 22px;margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <div style="font-size:13px;font-weight:800;color:var(--gold-bright);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🤖 Agente IA Financeiro</div>
-        <div style="font-size:12px;color:var(--text3)">Análise completa de fluxo de caixa, dívidas e projeção FIRE</div>
-      </div>
-      <button onclick="iaAnalisarFinancas()" style="
-        background:linear-gradient(135deg,#C99A3E,#A07830);border:none;border-radius:12px;
-        padding:10px 20px;color:#0A0704;font-size:12px;font-weight:800;
-        cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
-        box-shadow:0 2px 12px rgba(201,154,62,0.35)
-      ">⚡ Analisar Agora</button>
-    </div>
-  </div>
-
-  <!-- Resultado IA — aparece inline no final do dashboard -->
-  <div id="iaModal" style="display:none"></div>
-
   <div class="stoic-card">
     <div class="stoic-quote" id="stoicQuote">Riqueza não consiste em ter grandes posses, mas em ter poucas necessidades.</div>
     <div class="stoic-author" id="stoicAuthor">— Epictetus</div>
@@ -1666,23 +1695,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
     <div id="metaPrincipalBody"></div>
   </div>
-  <div class="grid-2" style="margin-bottom:16px">
-    <div class="card">
-      <div class="card-title">Distribuição das Despesas</div>
-      <div id="dashBudgetBars"></div>
+
+  <button class="dash-details-toggle" id="dashDetailsToggle" onclick="toggleDashDetails()">
+    <span id="dashDetailsToggleLabel">📊 Ver mais detalhes</span>
+    <span class="ddt-chev" id="dashDetailsChev">▾</span>
+  </button>
+
+  <div id="dashDetailsWrap" style="display:none">
+    <!-- Card Agente IA Financeiro -->
+    <div style="background:linear-gradient(135deg,rgba(201,154,62,0.1),rgba(201,154,62,0.04));border:1px solid rgba(201,154,62,0.25);border-radius:20px;padding:20px 22px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--gold-bright);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">🤖 Agente IA Financeiro</div>
+          <div style="font-size:12px;color:var(--text3)">Análise completa de fluxo de caixa, dívidas e projeção FIRE</div>
+        </div>
+        <button onclick="iaAnalisarFinancas()" style="
+          background:linear-gradient(135deg,#C99A3E,#A07830);border:none;border-radius:12px;
+          padding:10px 20px;color:#0A0704;font-size:12px;font-weight:800;
+          cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
+          box-shadow:0 2px 12px rgba(201,154,62,0.35)
+        ">⚡ Analisar Agora</button>
+      </div>
+    </div>
+
+    <!-- Resultado IA — aparece inline no final do dashboard -->
+    <div id="iaModal" style="display:none"></div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">Distribuição das Despesas</div>
+        <div id="dashBudgetBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Saúde Financeira</div>
+        <div id="dashHealth"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Evolução do Patrimônio — 24 meses <span style="font-size:11px;color:var(--text3);font-weight:400">(projeção com saldo atual e quitação de dívidas)</span></div>
+      <div class="chart-wrap" id="patrimonioEvolutionChart"></div>
     </div>
     <div class="card">
-      <div class="card-title">Saúde Financeira</div>
-      <div id="dashHealth"></div>
+      <div class="card-title">Projeção do Patrimônio — 10 anos (taxa 12% a.a.)</div>
+      <div class="chart-wrap" id="dashProjectionChart"></div>
     </div>
-  </div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-title">Evolução do Patrimônio — 24 meses <span style="font-size:11px;color:var(--text3);font-weight:400">(projeção com saldo atual e quitação de dívidas)</span></div>
-    <div class="chart-wrap" id="patrimonioEvolutionChart"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Projeção do Patrimônio — 10 anos (taxa 12% a.a.)</div>
-    <div class="chart-wrap" id="dashProjectionChart"></div>
   </div>
 </section>
 
@@ -3440,6 +3496,23 @@ function renderDashboard() {
   renderPatrimonioEvolutionChart();
   renderContasUrgentes();
   renderMetaPrincipalWidget();
+  toggleDashDetails(!!S.dashDetailsOpen);
+}
+
+// ══════════════════════════════════════════════════
+// DASHBOARD MINIMALISTA — toggle de detalhes
+// ══════════════════════════════════════════════════
+function toggleDashDetails(force) {
+  const wrap = document.getElementById('dashDetailsWrap');
+  const btn  = document.getElementById('dashDetailsToggle');
+  const lbl  = document.getElementById('dashDetailsToggleLabel');
+  if (!wrap) return;
+  const open = typeof force === 'boolean' ? force : wrap.style.display === 'none';
+  wrap.style.display = open ? '' : 'none';
+  if (btn) btn.classList.toggle('open', open);
+  if (lbl) lbl.textContent = open ? '📊 Ocultar detalhes' : '📊 Ver mais detalhes';
+  S.dashDetailsOpen = open;
+  save();
 }
 
 // ══════════════════════════════════════════════════
@@ -3756,7 +3829,7 @@ function goToResult(section) {
   showSection(section, tab);
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['dashboard','orcamento','dividas','juros','metas'][i] === section);
+    b.classList.toggle('active', ['dashboard','orcamento','dividas','juros','metas','reserva','virtudes','futuro'][i] === section);
   });
 }
 

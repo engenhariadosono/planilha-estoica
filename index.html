@@ -158,21 +158,9 @@ body {
 .nt-icon {
   display: inline-block; font-size: 14px; line-height: 1;
   filter: drop-shadow(0 0 6px rgba(201,154,62,0.35));
-  animation: navFloat 3.4s ease-in-out infinite;
   transition: transform 0.32s cubic-bezier(.34,1.56,.64,1);
 }
 .nav-tab:hover .nt-icon { transform: scale(1.3) rotate(-6deg); }
-.nav-tab:nth-child(1) .nt-icon { animation-delay: 0s; }
-.nav-tab:nth-child(2) .nt-icon { animation-delay: .25s; }
-.nav-tab:nth-child(3) .nt-icon { animation-delay: .5s; }
-.nav-tab:nth-child(4) .nt-icon { animation-delay: .75s; }
-.nav-tab:nth-child(5) .nt-icon { animation-delay: 1s; }
-.nav-tab:nth-child(6) .nt-icon { animation-delay: 1.25s; }
-.nav-tab:nth-child(7) .nt-icon { animation-delay: 1.5s; }
-.nav-tab:nth-child(8) .nt-icon { animation-delay: 1.75s; }
-.nav-tab:nth-child(9) .nt-icon { animation-delay: 2s; }
-@keyframes navFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
-@media (prefers-reduced-motion: reduce) { .nt-icon { animation: none; } }
 .quote-ticker { font-size: 11px; color: var(--text3); font-style: italic; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── LAYOUT ─── */

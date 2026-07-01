@@ -1019,6 +1019,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ─── BOTTOM NAV MOBILE ─── */
 .bottom-nav { display: none; }
+.bottom-nav-fade { display: none; }
 @media (max-width: 768px) {
   .nav-tabs { display: none; }
   .quote-ticker { display: none; }
@@ -1050,6 +1051,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .bottom-nav button .bn-icon { font-size: 18px; line-height: 1; }
   .bottom-nav button.active { color: var(--gold-bright); text-shadow: 0 0 12px rgba(201,154,62,0.5); background: rgba(201,154,62,0.08); }
   .bottom-nav button:hover  { color: var(--text2); }
+  .bottom-nav-fade {
+    display: block;
+    position: fixed; right: 0; bottom: 0;
+    width: 30px;
+    height: calc(66px + env(safe-area-inset-bottom));
+    background: linear-gradient(90deg, transparent, var(--nav-bg-mob) 70%);
+    pointer-events: none;
+    z-index: 201;
+    transition: opacity 0.25s ease;
+  }
+  .bottom-nav-fade.hidden { opacity: 0; }
 }
 
 /* ─── DEBT CARDS ─── */
@@ -2167,6 +2179,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
   <button onclick="showSection('diagnostico',this);syncBottomNav(this)"><span class="bn-icon">🧭</span>Diagnóstico</button>
 </nav>
+<div class="bottom-nav-fade" id="bottomNavFade"></div>
 
 <!-- Painel de resultado do Agente IA Financeiro -->
 <div id="iaResultPanel" style="display:none;max-width:900px;margin:0 auto 40px;padding:0 16px">
@@ -2238,6 +2251,22 @@ function _renderFocusWidget() {
 
 function initFocus() {
   if (localStorage.getItem('pe-focus') === 'on') setFocus(true);
+}
+// ───────────────────────────────────────────────────
+
+// ── BOTTOM NAV: indicador de rolagem (fade) ─────────
+function _initBottomNavFade() {
+  const nav = document.getElementById('bottomNav');
+  const fade = document.getElementById('bottomNavFade');
+  if (!nav || !fade) return;
+  const update = () => {
+    const noOverflow = nav.scrollWidth <= nav.clientWidth + 2;
+    const atEnd = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 2;
+    fade.classList.toggle('hidden', noOverflow || atEnd);
+  };
+  nav.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
 }
 // ───────────────────────────────────────────────────
 
@@ -4309,6 +4338,7 @@ async function _bootApp() {
   initFocus(); setupRealtime(); _initDateDefaults();
   _triggerCheckin();
   renderDados();
+  _initBottomNavFade();
 }
 
 // ══════════════════════════════════════════════════

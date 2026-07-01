@@ -1020,6 +1020,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .main { padding-bottom: 84px; }
   .bottom-nav {
     display: flex;
+    gap: 4px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -1029,17 +1030,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-top: 1px solid var(--border-md);
     box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     z-index: 200;
-    padding: 6px 0 max(8px, env(safe-area-inset-bottom));
+    padding: 6px 6px max(8px, env(safe-area-inset-bottom));
   }
   .bottom-nav::-webkit-scrollbar { display: none; }
   .bottom-nav button {
-    flex: 0 0 auto; min-width: 58px; background: none; border: none; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    padding: 4px 4px; color: var(--text3); font-size: 8.5px; font-weight: 600;
-    letter-spacing: 0.2px; text-transform: uppercase; transition: color 0.2s;
+    flex: 0 0 auto; min-width: 62px; background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 6px 8px; color: var(--text3); font-size: 8.5px; font-weight: 600;
+    letter-spacing: 0.2px; text-transform: uppercase; white-space: nowrap;
+    border-radius: 12px; transition: color 0.2s, background 0.2s;
   }
   .bottom-nav button .bn-icon { font-size: 18px; line-height: 1; }
-  .bottom-nav button.active { color: var(--gold-bright); text-shadow: 0 0 12px rgba(201,154,62,0.5); }
+  .bottom-nav button.active { color: var(--gold-bright); text-shadow: 0 0 12px rgba(201,154,62,0.5); background: rgba(201,154,62,0.08); }
   .bottom-nav button:hover  { color: var(--text2); }
 }
 

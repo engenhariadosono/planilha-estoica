@@ -65,6 +65,17 @@ function anexarDiagnostico(dados, periodo, conteudo) {
   dados.diagnosticos[periodo] = lista.slice(0, MAX_HISTORICO);
 }
 
+// Busca a versao MAIS RECENTE (nao a que foi lida no inicio, antes da chamada
+// a IA) antes de gravar. A chamada ao Claude leva 10-20s; se o usuario editar
+// algo no app durante esse tempo, gravar por cima do snapshot antigo apagaria
+// essa edicao. Reduz a janela de corrida para o intervalo minimo entre este
+// fetch e o PATCH, em vez do tempo inteiro da geracao.
+async function salvarDiagnosticos(pares) {
+  const fresco = await buscarEstadoCompleto();
+  pares.forEach(([periodo, conteudo]) => anexarDiagnostico(fresco, periodo, conteudo));
+  await salvarEstadoCompleto(fresco);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
@@ -85,8 +96,7 @@ export default async function handler(req, res) {
     if (periodoManual) {
       if (!PERIODOS[periodoManual]) return res.status(400).json({ error: 'periodo inválido' });
       const conteudo = await gerarConteudo(periodoManual, dados, apiKey);
-      anexarDiagnostico(dados, periodoManual, conteudo);
-      await salvarEstadoCompleto(dados);
+      await salvarDiagnosticos([[periodoManual, conteudo]]);
       return res.json({ ok: true, periodo: periodoManual, conteudo });
     }
 
@@ -103,8 +113,7 @@ export default async function handler(req, res) {
     if (diaMes === 1 && mes === 0) devidos.push('anual');
 
     const gerados = await Promise.all(devidos.map(p => gerarConteudo(p, dados, apiKey)));
-    devidos.forEach((p, i) => anexarDiagnostico(dados, p, gerados[i]));
-    await salvarEstadoCompleto(dados);
+    await salvarDiagnosticos(devidos.map((p, i) => [p, gerados[i]]));
 
     return res.json({ ok: true, gerados: devidos });
   } catch (err) {

@@ -19,7 +19,6 @@
 <!-- Fonts assíncrono: não bloqueia render -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>(function(){var t=localStorage.getItem('pe-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()</script>
 <style>
 
@@ -119,7 +118,7 @@ body {
 /* ─── NAV ─── */
 .nav-header {
   background: var(--nav-bg);
-  backdrop-filter: blur(28px);
+  backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--border-md);
   box-shadow: 0 1px 0 rgba(201,154,62,0.05), 0 4px 32px rgba(0,0,0,0.45);
   position: sticky; top: 0; z-index: 100;
@@ -139,7 +138,7 @@ body {
   background: linear-gradient(155deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008));
   border: 1px solid rgba(201,154,62,0.14);
   border-radius: 100px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
   box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset;
 }
 .nav-tab {
@@ -1034,7 +1033,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     scrollbar-width: none;
     position: fixed; bottom: 0; left: 0; right: 0;
     background: var(--nav-bg-mob);
-    backdrop-filter: blur(28px);
+    backdrop-filter: blur(18px);
     border-top: 1px solid var(--border-md);
     box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     z-index: 200;
@@ -2201,6 +2200,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div style="margin-top:32px;font-size:11px;letter-spacing:3px;color:rgba(201,154,62,0.25);text-transform:uppercase;font-weight:600">Planilha Estoica · Sua jornada rumo à independência financeira</div>
 </footer>
 
+<!-- Movido do <head>: nao bloqueia mais o parse/paint do HTML acima -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════
 // SUPABASE + REALTIME

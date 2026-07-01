@@ -1517,7 +1517,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <button class="nav-tab" onclick="showSection('reserva',this)">🛡️ Reserva</button>
     <button class="nav-tab" onclick="showSection('virtudes',this)">⚡ Virtudes</button>
     <button class="nav-tab" onclick="showSection('futuro',this)">🏛️ Futuro</button>
-    <button class="nav-tab" onclick="showSection('dados',this)">💾 Dados</button>
   </nav>
   <div class="nav-search" id="navSearch">
     <div class="ns-wrap">
@@ -1532,6 +1531,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
   <div class="quote-ticker" id="quoteTicker" style="display:none"></div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button class="focus-btn" id="dadosAccessBtn" onclick="showSection('dados',this)" title="Backup & Dados">💾</button>
     <button class="focus-btn" id="focusBtn" onclick="toggleFocus()" title="Modo Foco">◎</button>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar Dark/Light">
       <span class="tt-icon" id="themeIcon">☀️</span>
@@ -1656,6 +1656,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="stoic-author" id="stoicAuthor">— Epictetus</div>
   </div>
   <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="card" id="metaPrincipalCard" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🎯 Meta Principal</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" id="metaPrincipalBtnFire" onclick="setMetaPrincipal('fire')">Número FIRE</button>
+        <button class="btn btn-sm" id="metaPrincipalBtnReserva" onclick="setMetaPrincipal('reserva')">Reserva de Emergência</button>
+      </div>
+    </div>
+    <div id="metaPrincipalBody"></div>
+  </div>
   <div class="grid-2" style="margin-bottom:16px">
     <div class="card">
       <div class="card-title">Distribuição das Despesas</div>
@@ -2063,7 +2073,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
-  <button onclick="showSection('dados',this);syncBottomNav(this)"><span class="bn-icon">💾</span>Dados</button>
 </nav>
 
 <!-- Painel de resultado do Agente IA Financeiro -->
@@ -2373,6 +2382,18 @@ const QUOTES = [
   { q:'O homem mais rico é aquele cujo contentamento é mais barato.', a:'Henry David Thoreau' },
   { q:'A fortuna protege o prudente.', a:'Virgílio' },
   { q:'Não é o homem que tem pouco, mas o que deseja mais, que é pobre.', a:'Seneca' },
+  { q:'Honra ao Senhor com os teus bens... e se encherão os teus celeiros de fartura.', a:'Provérbios 3:9-10' },
+  { q:'A riqueza ganha da vaidade diminuirá, mas quem a ajunta pouco a pouco terá aumento.', a:'Provérbios 13:11' },
+  { q:'A mão preguiçosa empobrece, mas a mão dos diligentes enriquece.', a:'Provérbios 10:4' },
+  { q:'Os planos do diligente tendem à abundância, mas todo apressado tende à pobreza.', a:'Provérbios 21:5' },
+  { q:'E o meu Deus suprirá todas as vossas necessidades segundo as suas riquezas na glória.', a:'Filipenses 4:19' },
+  { q:'Lembra-te do Senhor teu Deus, porque ele é quem te dá poder para adquirires riquezas.', a:'Deuteronômio 8:18' },
+  { q:'Quem é fiel no pouco também é fiel no muito.', a:'Lucas 16:10' },
+  { q:'Entrega ao Senhor as tuas obras, e teus pensamentos serão bem-sucedidos.', a:'Provérbios 16:3' },
+  { q:'Sê forte e corajoso; não temas, nem te espantes, porque o Senhor teu Deus é contigo por onde quer que andares.', a:'Josué 1:9' },
+  { q:'Porque eu bem sei os pensamentos que penso a vosso respeito... pensamentos de paz e não de mal, para vos dar o fim que esperais.', a:'Jeremias 29:11' },
+  { q:'Vai ter com a formiga, ó preguiçoso; considera os seus caminhos, e sê sábio.', a:'Provérbios 6:6' },
+  { q:'Nunca vi o justo desamparado, nem a sua descendência a mendigar o pão.', a:'Salmos 37:25' },
 ];
 let qi = 0;
 function rotateQuote() {
@@ -3418,6 +3439,67 @@ function renderDashboard() {
 
   renderPatrimonioEvolutionChart();
   renderContasUrgentes();
+  renderMetaPrincipalWidget();
+}
+
+// ══════════════════════════════════════════════════
+// WIDGET META PRINCIPAL (Dashboard)
+// ══════════════════════════════════════════════════
+function setMetaPrincipal(tipo) {
+  S.metaPrincipalTipo = tipo;
+  save();
+  renderMetaPrincipalWidget();
+}
+
+function renderMetaPrincipalWidget() {
+  if (!appReady) return;
+  const tipo = S.metaPrincipalTipo || 'fire';
+  const btnFire = document.getElementById('metaPrincipalBtnFire');
+  const btnRes  = document.getElementById('metaPrincipalBtnReserva');
+  if (btnFire) btnFire.classList.toggle('btn-primary', tipo === 'fire');
+  if (btnRes)  btnRes.classList.toggle('btn-primary', tipo === 'reserva');
+  const body = document.getElementById('metaPrincipalBody');
+  if (!body) return;
+
+  const desp = totalDesp();
+
+  if (tipo === 'fire') {
+    if (!(desp > 0)) {
+      body.innerHTML = `<div class="info-box">Registre suas despesas no Orçamento para calcular o Número FIRE.</div>`;
+      return;
+    }
+    const ativos  = S.ativos || 0;
+    const fireNum = desp * 12 * 25;
+    const pct     = Math.min(100, (ativos / fireNum) * 100);
+    const cor     = pct >= 100 ? 'var(--green)' : 'var(--gold)';
+    body.innerHTML = `
+      <div style="text-align:center;margin-bottom:10px">
+        <div style="font-size:26px;font-weight:800;color:${cor}">${fmtP(pct)}</div>
+        <div style="font-size:12px;color:var(--text3)">${fmt(ativos)} de ${fmt(fireNum)} — Número FIRE (regra dos 4%)</div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${cor}"></div></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text3);text-align:center">
+        ${pct>=100 ? '🎉 Independência financeira já atingida!' : `Faltam <strong style="color:var(--text)">${fmt(Math.max(0,fireNum-ativos))}</strong> para o Número FIRE.`}
+      </div>`;
+  } else {
+    const acum   = S.reserva?.acumulado || 0;
+    const meta   = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
+    if (!(meta > 0)) {
+      body.innerHTML = `<div class="info-box">Registre suas despesas ou defina uma meta manual na aba Reserva.</div>`;
+      return;
+    }
+    const pct = Math.min(100, (acum / meta) * 100);
+    const cor = pct >= 100 ? 'var(--green)' : 'var(--gold)';
+    body.innerHTML = `
+      <div style="text-align:center;margin-bottom:10px">
+        <div style="font-size:26px;font-weight:800;color:${cor}">${fmtP(pct)}</div>
+        <div style="font-size:12px;color:var(--text3)">${fmt(acum)} de ${fmt(meta)} — Reserva de Emergência</div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${cor}"></div></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text3);text-align:center">
+        ${pct>=100 ? '🛡️ Reserva completa!' : `Faltam <strong style="color:var(--text)">${fmt(Math.max(0,meta-acum))}</strong> para a reserva completa.`}
+      </div>`;
+  }
 }
 
 function renderMiniChart(data, elId) {

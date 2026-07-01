@@ -1618,13 +1618,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
   <div class="nav-tabs-dock">
     <nav class="nav-tabs">
+      <button class="nav-tab" onclick="showSection('centavo',this)"><span class="nt-icon">🪙</span>Centavo</button>
       <button class="nav-tab active"  onclick="showSection('dashboard',this)"><span class="nt-icon">📊</span>Dashboard</button>
       <button class="nav-tab" onclick="showSection('diagnostico',this)"><span class="nt-icon">🧭</span>Diagnóstico</button>
       <button class="nav-tab" onclick="showSection('orcamento',this)"><span class="nt-icon">💰</span>Orçamento</button>
       <button class="nav-tab" onclick="showSection('dividas',this)"><span class="nt-icon">💳</span>Dívidas</button>
       <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
       <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
-      <button class="nav-tab" onclick="showSection('centavo',this)"><span class="nt-icon">🪙</span>Centavo</button>
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
       <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
       <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
@@ -2294,13 +2294,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <!-- BOTTOM NAV MOBILE -->
 <nav class="bottom-nav" id="bottomNav">
+  <button onclick="showSection('centavo',this);syncBottomNav(this)"><span class="bn-icon">🪙</span>Centavo</button>
   <button class="active" onclick="showSection('dashboard',this);syncBottomNav(this)"><span class="bn-icon">📊</span>Dashboard</button>
   <button onclick="showSection('diagnostico',this);syncBottomNav(this)"><span class="bn-icon">🧭</span>Diagnóstico</button>
   <button onclick="showSection('orcamento',this);syncBottomNav(this)"><span class="bn-icon">💰</span>Orçamento</button>
   <button onclick="showSection('dividas',this);syncBottomNav(this)"><span class="bn-icon">💳</span>Dívidas</button>
   <button onclick="showSection('juros',this);syncBottomNav(this)"><span class="bn-icon">📈</span>Juros</button>
   <button onclick="showSection('metas',this);syncBottomNav(this)"><span class="bn-icon">🎯</span>Metas</button>
-  <button onclick="showSection('centavo',this);syncBottomNav(this)"><span class="bn-icon">🪙</span>Centavo</button>
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
@@ -4029,7 +4029,7 @@ function goToResult(section) {
   showSection(section, tab);
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['dashboard','diagnostico','orcamento','dividas','juros','metas','centavo','reserva','virtudes','futuro'][i] === section);
+    b.classList.toggle('active', ['centavo','dashboard','diagnostico','orcamento','dividas','juros','metas','reserva','virtudes','futuro'][i] === section);
   });
 }
 

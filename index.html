@@ -146,25 +146,19 @@ body {
   font-size: 12.5px; font-weight: 600; padding: 8px 14px;
   border-radius: 100px; cursor: pointer; white-space: nowrap;
   display: flex; align-items: center; gap: 6px;
-  transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), background 0.25s ease, color 0.25s ease, box-shadow 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 .nav-tab:hover {
   color: var(--text2); background: var(--surface2);
-  transform: translateY(-3px) scale(1.08);
-  box-shadow: 0 12px 26px rgba(0,0,0,0.3);
-  z-index: 1;
 }
 .nav-tab.active {
   color: var(--gold-bright); background: rgba(201,154,62,0.12);
   box-shadow: 0 0 0 1px rgba(201,154,62,0.22) inset, 0 6px 20px rgba(201,154,62,0.18);
 }
-.nav-tab.active:hover { transform: translateY(-3px) scale(1.08); }
 .nt-icon {
   display: inline-block; font-size: 14px; line-height: 1;
   filter: drop-shadow(0 0 6px rgba(201,154,62,0.35));
-  transition: transform 0.32s cubic-bezier(.34,1.56,.64,1);
 }
-.nav-tab:hover .nt-icon { transform: scale(1.3) rotate(-6deg); }
 .quote-ticker { font-size: 11px; color: var(--text3); font-style: italic; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── LAYOUT ─── */
@@ -383,6 +377,65 @@ select option { background: var(--surface2); }
 .dash-details-toggle:hover { color: var(--gold-bright); background: rgba(201,154,62,0.08); border-color: rgba(201,154,62,0.25); }
 .ddt-chev { display: inline-block; transition: transform 0.3s ease; }
 .dash-details-toggle.open .ddt-chev { transform: rotate(180deg); }
+
+/* ─── DESAFIO DO CENTAVO DOBRADO ─── */
+.centavo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 8px;
+}
+.centavo-day {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+  border: 1.5px solid var(--border-md);
+  color: var(--text3);
+  background: var(--surface2);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+.centavo-day.feito {
+  background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold) 60%, var(--gold-dim) 100%);
+  border-color: var(--gold-bright);
+  color: #2B2420;
+  box-shadow: 0 2px 10px rgba(201,154,62,0.4);
+}
+.centavo-day.hoje {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  animation: centavoPulse 1.8s ease-in-out infinite;
+}
+@keyframes centavoPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,154,62,0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(201,154,62,0); }
+}
+.centavo-coin-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+}
+.centavo-coin {
+  width: 120px; height: 120px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900; color: #2B2420; font-family: 'Inter', sans-serif;
+  background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold) 55%, var(--gold-dim) 100%);
+  box-shadow: 0 0 60px rgba(201,154,62,0.6), 0 10px 40px rgba(0,0,0,0.5);
+  animation: centavoFlip 1s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes centavoFlip {
+  0%   { transform: rotateY(0deg) scale(0.4); opacity: 0; }
+  40%  { transform: rotateY(360deg) scale(1.15); opacity: 1; }
+  70%  { transform: rotateY(720deg) scale(1); }
+  100% { transform: rotateY(1080deg) scale(1); }
+}
+.centavo-celebracao {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,7,4,0.92);
+}
+.centavo-celebracao-content { position: relative; z-index: 2; text-align: center; padding: 20px; }
+#centavoConfettiCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* ─── SECTION HEADER ─── */
 .section-header {
@@ -1571,6 +1624,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <button class="nav-tab" onclick="showSection('dividas',this)"><span class="nt-icon">💳</span>Dívidas</button>
       <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
       <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
+      <button class="nav-tab" onclick="showSection('centavo',this)"><span class="nt-icon">🪙</span>Centavo</button>
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
       <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
       <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
@@ -1645,6 +1699,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       </div>
     </div>
     <div id="metaPrincipalBody"></div>
+  </div>
+
+  <div class="card" id="centavoCardDashboard" onclick="showSection('centavo', document.querySelector('.nav-tab[onclick*=&quot;centavo&quot;]'))" style="margin-bottom:16px;cursor:pointer">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🪙 Desafio do Centavo</div>
+      <div id="centavoCardDiaLabel" style="font-size:11px;color:var(--gold-bright);font-weight:700">Dia 0 de 30</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+      <div id="centavoCardValor" style="font-size:24px;font-weight:900;color:var(--gold-bright);letter-spacing:-1px">R$ 0,01</div>
+      <div style="font-size:11px;color:var(--text3)">valor de hoje</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="centavoCardProgressBar" style="width:0%;background:var(--gold-bright)"></div></div>
   </div>
 
   <button class="dash-details-toggle" id="dashDetailsToggle" onclick="toggleDashDetails()">
@@ -1973,6 +2039,66 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </main>
 
 <!-- ══════════════════════════════════════════
+     DESAFIO DO CENTAVO DOBRADO
+══════════════════════════════════════════ -->
+<section class="section" id="s-centavo">
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">🪙 Desafio do Centavo Dobrado</h1>
+      <p class="section-sub">30 dias dobrando o valor. Pequenas decisões, compostas ao extremo.</p>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center;margin-bottom:16px">
+    <div id="centavoDiaLabel" style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px">Dia 0 de 30</div>
+    <div id="centavoValorDia" style="font-size:38px;font-weight:900;letter-spacing:-1.5px;color:var(--gold-bright);text-shadow:0 0 24px rgba(201,154,62,0.35)">R$ 0,01</div>
+    <div style="font-size:12px;color:var(--text3);margin:6px 0 18px">valor de hoje</div>
+    <div class="progress-wrap"><div class="progress-bar" id="centavoProgressBar" style="width:0%;background:var(--gold-bright)"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--text3)">
+      <span>Acumulado: <strong id="centavoAcumuladoTotal" style="color:var(--green)">R$ 0,00</strong></span>
+      <span id="centavoPctLabel">0%</span>
+    </div>
+    <button class="btn btn-primary" id="centavoMarcarBtn" onclick="marcarDiaCentavo()" style="margin-top:20px;width:100%;font-size:14px;padding:14px">Marquei hoje ✓</button>
+
+    <div id="centavoManualFormWrap" style="display:none;margin-top:20px;text-align:left">
+      <div style="font-size:12px;color:var(--gold-bright);margin-bottom:8px">⚠️ O valor automático deste dia passaria de R$ 500. Defina quanto você vai guardar hoje para continuar:</div>
+      <div style="display:flex;gap:8px">
+        <input type="number" id="centavoValorManualInput" placeholder="0,00" min="0.01" step="0.01" style="flex:1;height:44px">
+        <button class="btn btn-primary" onclick="confirmarValorManualCentavo()" style="white-space:nowrap;padding:0 20px">Confirmar</button>
+      </div>
+    </div>
+
+    <button class="btn btn-sm" id="centavoFinalizarBtn" onclick="finalizarDesafioCentavo()" style="display:none;margin-top:12px;width:100%">🏁 Finalizar desafio prolongado</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Os 30 dias</div>
+    <div class="centavo-grid" id="centavoGrid"></div>
+  </div>
+
+  <div class="info-box" style="margin-top:16px">
+    <strong>Como funciona:</strong> a cada dia marcado, o valor dobra em relação ao anterior — R$ 0,01 no dia 1, R$ 0,02 no dia 2, e assim por diante. Um único dia perdido reinicia o desafio no dia 1. Consistência é o único requisito.
+  </div>
+</section>
+
+<!-- Overlay: animação da moeda ao marcar o dia -->
+<div class="centavo-coin-overlay" id="centavoCoinOverlay" style="display:none">
+  <div class="centavo-coin" id="centavoCoinEl">R$</div>
+</div>
+
+<!-- Overlay: celebração final (dia 30) -->
+<div class="centavo-celebracao" id="centavoCelebracao" style="display:none">
+  <canvas id="centavoConfettiCanvas"></canvas>
+  <div class="centavo-celebracao-content">
+    <div style="font-size:52px;margin-bottom:12px">🏆</div>
+    <div style="font-size:13px;color:var(--gold-bright);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">Desafio Completo</div>
+    <div id="centavoTotalFinalDias" style="font-size:34px;font-weight:900;color:var(--text);margin-bottom:4px"></div>
+    <div id="centavoTotalFinalValor" style="font-size:28px;font-weight:900;color:var(--gold-bright);text-shadow:0 0 24px rgba(201,154,62,0.4);margin:14px 0"></div>
+    <button class="btn btn-primary" onclick="fecharCelebracaoCentavo()" style="margin-top:10px">Continuar</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      RESERVA DE EMERGÊNCIA
 ══════════════════════════════════════════ -->
 <section class="section" id="s-reserva">
@@ -2174,6 +2300,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('dividas',this);syncBottomNav(this)"><span class="bn-icon">💳</span>Dívidas</button>
   <button onclick="showSection('juros',this);syncBottomNav(this)"><span class="bn-icon">📈</span>Juros</button>
   <button onclick="showSection('metas',this);syncBottomNav(this)"><span class="bn-icon">🎯</span>Metas</button>
+  <button onclick="showSection('centavo',this);syncBottomNav(this)"><span class="bn-icon">🪙</span>Centavo</button>
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
@@ -2404,7 +2531,8 @@ let S = {
   marcos: [],
   checkIn: { ultimo: '', streak: 0 },
   contasUrgentes: [],
-  diagnosticos: {}
+  diagnosticos: {},
+  centavo: { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }
 };
 
 // Debounce: localStorage imediato, Supabase após 600ms de inatividade
@@ -2546,6 +2674,7 @@ function showSection(id, btn) {
   if (id === 'dividas')    renderDividas();
   if (id === 'juros')      calcJuros();
   if (id === 'metas')      renderMetas();
+  if (id === 'centavo')    renderCentavo();
   if (id === 'reserva')    { _initReservaForm(); renderReserva(); }
   if (id === 'virtudes')   renderVirtudes();
   if (id === 'futuro')     renderFuturo();
@@ -3566,6 +3695,7 @@ function renderDashboard() {
   renderPatrimonioEvolutionChart();
   renderContasUrgentes();
   renderMetaPrincipalWidget();
+  renderCentavoDashboardCard();
   toggleDashDetails(!!S.dashDetailsOpen);
 }
 
@@ -3899,7 +4029,7 @@ function goToResult(section) {
   showSection(section, tab);
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['dashboard','diagnostico','orcamento','dividas','juros','metas','reserva','virtudes','futuro'][i] === section);
+    b.classList.toggle('active', ['dashboard','diagnostico','orcamento','dividas','juros','metas','centavo','reserva','virtudes','futuro'][i] === section);
   });
 }
 
@@ -4257,6 +4387,7 @@ function importBackup(event) {
       S.marcos        = S.marcos       || [];
       S.checkIn       = S.checkIn      || { ultimo:'', streak:0 };
       S.pagas         = S.pagas        || [];
+      S.centavo       = S.centavo      || { diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false };
       save();
       renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
       _showToast('✅ Backup restaurado com sucesso!');
@@ -4317,6 +4448,7 @@ function _confirmarLimpeza() {
     strategy:'avalanche', ativos:0,
     reserva:{ acumulado:0, metaCustom:0, prazo:12 },
     orcamentoCats:{}, marcos:[], checkIn:{ ultimo:'', streak:0 },
+    centavo:{ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false },
   });
   save();
   renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
@@ -4332,6 +4464,7 @@ async function _bootApp() {
   S.orcamentoCats= S.orcamentoCats|| {};
   S.marcos       = S.marcos       || [];
   S.checkIn      = S.checkIn      || { ultimo: '', streak: 0 };
+  S.centavo      = S.centavo      || { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
   appReady = true;
   const el = document.getElementById('metaAtivos');
   if (el) el.value = S.ativos || 0;
@@ -4748,6 +4881,282 @@ function confirmarVoz() {
     closeVoiceModal(); save(); renderOrcamento(); renderDashboard();
     _showToast('Registrado. A palavra honrada é virtude.');
   }
+}
+
+// ══════════════════════════════════════════════════
+// DESAFIO DO CENTAVO DOBRADO (30 dias)
+// ══════════════════════════════════════════════════
+const CENTAVO_DIAS_TOTAL = 30;
+const CENTAVO_LIMITE_MANUAL = 500; // acima disso, o valor do dia deixa de ser automático
+const CENTAVO_MARCOS = [1, 100, 10000, 1000000];
+
+// Valor "puro" da fórmula de dobra, ignorando qualquer valor manual já definido
+function _centavoValorFormula(dia) {
+  return dia > 0 ? 0.01 * Math.pow(2, dia - 1) : 0;
+}
+// Valor real do dia: usa o valor manual se existir (modo prolongado), senão a fórmula
+function _centavoValorDia(dia) {
+  if (dia <= 0) return 0;
+  const manual = S.centavo?.valoresManuais?.[dia];
+  return manual != null ? manual : _centavoValorFormula(dia);
+}
+// Soma real dos dias já marcados — não usa fórmula fechada porque dias no
+// modo manual quebram a progressão geométrica pura
+function _centavoTotalAte(dia) {
+  let total = 0;
+  for (let d = 1; d <= dia; d++) total += _centavoValorDia(d);
+  return total;
+}
+function _isoAddDias(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+// Verifica se um dia foi perdido (pulou pelo menos um dia sem marcar) e
+// reinicia o desafio quando necessário. Usa a data local do dispositivo.
+function _centavoVerificarPerdido() {
+  const c = S.centavo;
+  if (!c || c.diaAtual === 0 || c.concluido) return false;
+  const ultima = c.datasMarcadas[c.datasMarcadas.length - 1];
+  if (!ultima) return false;
+  const hoje = todayISO();
+  const ontem = _isoAddDias(hoje, -1);
+  if (ultima === hoje || ultima === ontem) return false;
+  S.centavo = { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
+  save();
+  _showToast('Desafio reiniciado — consistência é o ponto.');
+  return true;
+}
+
+function renderCentavoDashboardCard() {
+  if (!appReady) return;
+  _centavoVerificarPerdido();
+  const diaLabel = document.getElementById('centavoCardDiaLabel');
+  if (!diaLabel) return;
+  const c = S.centavo || { diaAtual: 0, datasMarcadas: [], modoManual: false, concluido: false };
+  const hoje = todayISO();
+  const jaMarcouHoje = c.datasMarcadas[c.datasMarcadas.length - 1] === hoje;
+  const diaExibicao = c.concluido ? c.diaAtual : (c.diaAtual === 0 ? 1 : (jaMarcouHoje ? c.diaAtual : c.diaAtual + 1));
+  diaLabel.textContent = c.modoManual ? `Dia ${c.diaAtual} (prolongado)` : `Dia ${c.diaAtual} de ${CENTAVO_DIAS_TOTAL}`;
+  document.getElementById('centavoCardValor').textContent = fmtD(_centavoValorDia(diaExibicao));
+  document.getElementById('centavoCardProgressBar').style.width = `${Math.min(100, (c.diaAtual / CENTAVO_DIAS_TOTAL) * 100)}%`;
+}
+
+function renderCentavo() {
+  if (!appReady) return;
+  _centavoVerificarPerdido();
+  const c = S.centavo || { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
+  const hoje = todayISO();
+  const jaMarcouHoje = c.datasMarcadas[c.datasMarcadas.length - 1] === hoje;
+  const concluido = !!c.concluido;
+  const diaExibicao = concluido ? c.diaAtual : (jaMarcouHoje ? c.diaAtual : c.diaAtual + 1);
+  // Precisa de valor manual quando a fórmula automática do próximo dia passaria do limite
+  const precisaManual = !concluido && !jaMarcouHoje && _centavoValorFormula(diaExibicao) > CENTAVO_LIMITE_MANUAL;
+  const emProlongamento = c.modoManual && c.diaAtual >= CENTAVO_DIAS_TOTAL && !concluido;
+
+  const diaLabel     = document.getElementById('centavoDiaLabel');
+  const valorDiaEl   = document.getElementById('centavoValorDia');
+  const barEl        = document.getElementById('centavoProgressBar');
+  const acumEl       = document.getElementById('centavoAcumuladoTotal');
+  const pctEl        = document.getElementById('centavoPctLabel');
+  const btn          = document.getElementById('centavoMarcarBtn');
+  const manualWrap   = document.getElementById('centavoManualFormWrap');
+  const finalizarBtn = document.getElementById('centavoFinalizarBtn');
+  const grid         = document.getElementById('centavoGrid');
+  if (!diaLabel) return;
+
+  diaLabel.textContent = concluido
+    ? `Desafio completo — ${c.diaAtual} dia${c.diaAtual === 1 ? '' : 's'}`
+    : (c.modoManual ? `Dia ${diaExibicao} (prolongado)` : `Dia ${diaExibicao} de ${CENTAVO_DIAS_TOTAL}`);
+  valorDiaEl.textContent = fmtD(_centavoValorDia(diaExibicao));
+  const pct = Math.min(100, (c.diaAtual / CENTAVO_DIAS_TOTAL) * 100);
+  barEl.style.width = `${pct}%`;
+  acumEl.textContent = fmtD(_centavoTotalAte(c.diaAtual));
+  pctEl.textContent = `${pct.toFixed(0)}%`;
+
+  // Botão principal / formulário manual / finalizar prolongamento
+  manualWrap.style.display = (!concluido && precisaManual) ? '' : 'none';
+  finalizarBtn.style.display = emProlongamento ? '' : 'none';
+  if (concluido) {
+    btn.style.display = '';
+    btn.textContent = '🏆 Desafio concluído';
+    btn.disabled = true;
+  } else if (precisaManual) {
+    btn.style.display = 'none';
+  } else if (jaMarcouHoje) {
+    btn.style.display = '';
+    btn.textContent = '✓ Já marcado hoje';
+    btn.disabled = true;
+  } else {
+    btn.style.display = '';
+    btn.textContent = 'Marquei hoje ✓';
+    btn.disabled = false;
+  }
+
+  const totalCelulas = Math.max(CENTAVO_DIAS_TOTAL, c.diaAtual + (concluido ? 0 : 1));
+  grid.innerHTML = Array.from({ length: totalCelulas }, (_, i) => {
+    const dia = i + 1;
+    const feito = dia <= c.diaAtual;
+    const ehHoje = !concluido && dia === diaExibicao && !feito;
+    const cls = feito ? 'feito' : (ehHoje ? 'hoje' : '');
+    return `<div class="centavo-day ${cls}" title="Dia ${dia} — ${fmtD(_centavoValorDia(dia))}">${feito ? '🪙' : dia}</div>`;
+  }).join('');
+
+  renderCentavoDashboardCard();
+}
+
+function _centavoCheckMilestone(totalAnterior, totalNovo) {
+  const c = S.centavo;
+  for (const marco of CENTAVO_MARCOS) {
+    if (totalAnterior < marco && totalNovo >= marco && (c.ultimoMarco || 0) < marco) {
+      c.ultimoMarco = marco;
+      _showToast(`🏅 Marco alcançado: ${fmtD(marco)}!`);
+      break;
+    }
+  }
+}
+
+function _centavoAnimarMoeda(onDone) {
+  const overlay = document.getElementById('centavoCoinOverlay');
+  const coin = document.getElementById('centavoCoinEl');
+  if (!overlay || !coin) { onDone?.(); return; }
+  overlay.style.display = 'flex';
+  coin.style.animation = 'none';
+  void coin.offsetWidth; // reinicia a animação
+  coin.style.animation = 'centavoFlip 1s cubic-bezier(.34,1.56,.64,1)';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    onDone?.();
+  }, 1000);
+}
+
+function marcarDiaCentavo() {
+  if (!S.centavo) S.centavo = { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
+  const c = S.centavo;
+  const hoje = todayISO();
+
+  if (c.concluido) return;
+  if (c.datasMarcadas[c.datasMarcadas.length - 1] === hoje) return;
+  // Se o próximo dia exige valor manual, o botão principal não deve nem estar visível —
+  // esta checagem é só uma proteção extra contra chamadas diretas.
+  if (_centavoValorFormula(c.diaAtual + 1) > CENTAVO_LIMITE_MANUAL) return;
+
+  const totalAnterior = _centavoTotalAte(c.diaAtual);
+  c.datasMarcadas.push(hoje);
+  c.diaAtual += 1;
+  const totalNovo = _centavoTotalAte(c.diaAtual);
+
+  save();
+  _centavoCheckMilestone(totalAnterior, totalNovo);
+
+  _centavoAnimarMoeda(() => {
+    renderCentavo();
+    if (c.diaAtual >= CENTAVO_DIAS_TOTAL && !c.modoManual) {
+      c.concluido = true;
+      save();
+      _centavoCelebrarFinal(totalNovo);
+    }
+  });
+}
+
+function confirmarValorManualCentavo() {
+  if (!S.centavo) S.centavo = { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
+  const c = S.centavo;
+  const hoje = todayISO();
+  if (c.concluido) return;
+  if (c.datasMarcadas[c.datasMarcadas.length - 1] === hoje) return;
+
+  const input = document.getElementById('centavoValorManualInput');
+  const valor = parseFloat(input.value);
+  if (isNaN(valor) || valor <= 0) { _showToast('Informe um valor válido, maior que zero.'); return; }
+
+  const totalAnterior = _centavoTotalAte(c.diaAtual);
+  const proximoDia = c.diaAtual + 1;
+  if (!c.valoresManuais) c.valoresManuais = {};
+  c.valoresManuais[proximoDia] = valor;
+  c.modoManual = true;
+  c.datasMarcadas.push(hoje);
+  c.diaAtual = proximoDia;
+  const totalNovo = _centavoTotalAte(c.diaAtual);
+
+  save();
+  _centavoCheckMilestone(totalAnterior, totalNovo);
+  input.value = '';
+
+  _centavoAnimarMoeda(() => renderCentavo());
+}
+
+// Encerra um desafio prolongado (além do dia 30) quando o usuário decide parar
+function finalizarDesafioCentavo() {
+  if (!S.centavo) return;
+  const c = S.centavo;
+  if (c.concluido) return;
+  c.concluido = true;
+  save();
+  renderCentavo();
+  _centavoCelebrarFinal(_centavoTotalAte(c.diaAtual));
+}
+
+function _centavoCelebrarFinal(totalFinal) {
+  const overlay = document.getElementById('centavoCelebracao');
+  const valorEl = document.getElementById('centavoTotalFinalValor');
+  const diasEl = document.getElementById('centavoTotalFinalDias');
+  if (!overlay) return;
+  const dias = S.centavo?.diaAtual || 0;
+  if (diasEl) diasEl.textContent = S.centavo?.modoManual ? `${dias} dias (prolongado)` : `${dias} de ${CENTAVO_DIAS_TOTAL} dias`;
+  valorEl.textContent = fmtD(totalFinal);
+  overlay.style.display = 'flex';
+  _centavoConfetti();
+}
+
+function fecharCelebracaoCentavo() {
+  const overlay = document.getElementById('centavoCelebracao');
+  if (overlay) overlay.style.display = 'none';
+  const canvas = document.getElementById('centavoConfettiCanvas');
+  if (canvas && canvas._pararConfetti) canvas._pararConfetti();
+}
+
+// Confete leve, sem dependências externas
+function _centavoConfetti() {
+  const canvas = document.getElementById('centavoConfettiCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  const cores = ['#C99A3E', '#E8B84B', '#4EAA72', '#F5EDE0', '#5C3F15'];
+  const particulas = Array.from({ length: 140 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 * dpr - Math.random() * canvas.height * 0.5,
+    w: (4 + Math.random() * 5) * dpr,
+    h: (8 + Math.random() * 6) * dpr,
+    vy: (2 + Math.random() * 3) * dpr,
+    vx: (Math.random() - 0.5) * 2 * dpr,
+    rot: Math.random() * Math.PI,
+    vrot: (Math.random() - 0.5) * 0.2,
+    cor: cores[Math.floor(Math.random() * cores.length)],
+  }));
+  let ativo = true;
+  const inicio = performance.now();
+  function frame(t) {
+    if (!ativo) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particulas.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.cor;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (t - inicio < 4000) requestAnimationFrame(frame);
+    else { ativo = false; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  }
+  requestAnimationFrame(frame);
+  canvas._pararConfetti = () => { ativo = false; ctx.clearRect(0, 0, canvas.width, canvas.height); };
 }
 
 // ══════════════════════════════════════════════════

@@ -2,6 +2,15 @@
   "functions": {
     "api/analyze.js": {
       "maxDuration": 30
+    },
+    "api/diagnostico.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/diagnostico",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

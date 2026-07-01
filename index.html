@@ -212,12 +212,12 @@ body {
 }
 
 /* ─── KPI ─── */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 11px; margin-bottom: 22px; }
 .kpi-card {
   background: linear-gradient(155deg, var(--kpi-bg1) 0%, var(--kpi-bg2) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: 13px 15px;
   position: relative; overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.025) inset;
   transform: perspective(700px) translateZ(0);
@@ -241,13 +241,13 @@ body {
 .kpi-card.green::before { background: linear-gradient(90deg, #1A3D28, var(--green), #1A3D28); box-shadow: 0 0 16px rgba(78,170,114,0.4); }
 .kpi-card.red::before   { background: linear-gradient(90deg, #3E1810, var(--red), #3E1810);   box-shadow: 0 0 16px rgba(192,98,72,0.4); }
 .kpi-card.blue::before  { background: linear-gradient(90deg, #122040, var(--blue), #122040);  box-shadow: 0 0 16px rgba(74,126,196,0.4); }
-.kpi-label { font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 9px; }
-.kpi-value { font-size: 26px; font-weight: 900; letter-spacing: -1.2px; line-height: 1; }
+.kpi-label { font-size: 9px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; }
+.kpi-value { font-size: 20px; font-weight: 900; letter-spacing: -0.9px; line-height: 1; }
 .kpi-value.gold  { color: var(--gold-bright); text-shadow: 0 0 20px rgba(201,154,62,0.3); }
 .kpi-value.green { color: var(--green);       text-shadow: 0 0 20px rgba(78,170,114,0.25); }
 .kpi-value.red   { color: var(--red);         text-shadow: 0 0 20px rgba(192,98,72,0.25); }
 .kpi-value.blue  { color: var(--blue);        text-shadow: 0 0 20px rgba(74,126,196,0.25); }
-.kpi-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+.kpi-sub { font-size: 10px; color: var(--text3); margin-top: 5px; }
 
 /* ─── PROGRESS ─── */
 .progress-wrap {
@@ -1567,6 +1567,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="nav-tabs-dock">
     <nav class="nav-tabs">
       <button class="nav-tab active"  onclick="showSection('dashboard',this)"><span class="nt-icon">📊</span>Dashboard</button>
+      <button class="nav-tab" onclick="showSection('diagnostico',this)"><span class="nt-icon">🧭</span>Diagnóstico</button>
       <button class="nav-tab" onclick="showSection('orcamento',this)"><span class="nt-icon">💰</span>Orçamento</button>
       <button class="nav-tab" onclick="showSection('dividas',this)"><span class="nt-icon">💳</span>Dívidas</button>
       <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
@@ -1574,7 +1575,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
       <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
       <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
-      <button class="nav-tab" onclick="showSection('diagnostico',this)"><span class="nt-icon">🧭</span>Diagnóstico</button>
     </nav>
   </div>
   <div class="nav-search" id="navSearch">
@@ -2170,6 +2170,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <!-- BOTTOM NAV MOBILE -->
 <nav class="bottom-nav" id="bottomNav">
   <button class="active" onclick="showSection('dashboard',this);syncBottomNav(this)"><span class="bn-icon">📊</span>Dashboard</button>
+  <button onclick="showSection('diagnostico',this);syncBottomNav(this)"><span class="bn-icon">🧭</span>Diagnóstico</button>
   <button onclick="showSection('orcamento',this);syncBottomNav(this)"><span class="bn-icon">💰</span>Orçamento</button>
   <button onclick="showSection('dividas',this);syncBottomNav(this)"><span class="bn-icon">💳</span>Dívidas</button>
   <button onclick="showSection('juros',this);syncBottomNav(this)"><span class="bn-icon">📈</span>Juros</button>
@@ -2177,7 +2178,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
-  <button onclick="showSection('diagnostico',this);syncBottomNav(this)"><span class="bn-icon">🧭</span>Diagnóstico</button>
 </nav>
 <div class="bottom-nav-fade" id="bottomNavFade"></div>
 
@@ -3898,7 +3898,7 @@ function goToResult(section) {
   showSection(section, tab);
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['dashboard','orcamento','dividas','juros','metas','reserva','virtudes','futuro','diagnostico'][i] === section);
+    b.classList.toggle('active', ['dashboard','diagnostico','orcamento','dividas','juros','metas','reserva','virtudes','futuro'][i] === section);
   });
 }
 

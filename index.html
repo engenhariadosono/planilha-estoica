@@ -1713,6 +1713,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="progress-wrap"><div class="progress-bar" id="centavoCardProgressBar" style="width:0%;background:var(--gold-bright)"></div></div>
   </div>
 
+  <div class="card" id="burnRateCard" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🔥 Taxa de Queima</div>
+      <div id="burnRateDiaHora" style="font-size:11px;color:var(--text3)"></div>
+    </div>
+    <div id="burnRateOdometro" style="font-size:32px;font-weight:900;letter-spacing:-1px;color:var(--red);text-shadow:0 0 20px rgba(192,98,72,0.3)">R$ 0,00</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">queimado hoje, desde a meia-noite</div>
+  </div>
+
   <button class="dash-details-toggle" id="dashDetailsToggle" onclick="toggleDashDetails()">
     <span id="dashDetailsToggleLabel">📊 Ver mais detalhes</span>
     <span class="ddt-chev" id="dashDetailsChev">▾</span>
@@ -3739,6 +3748,7 @@ function renderDashboard() {
   renderContasUrgentes();
   renderMetaPrincipalWidget();
   renderCentavoDashboardCard();
+  _iniciarBurnRateTicker();
   toggleDashDetails(!!S.dashDetailsOpen);
 }
 
@@ -4959,6 +4969,34 @@ function _centavoVerificarPerdido() {
   save();
   _showToast('Desafio reiniciado — consistência é o ponto.');
   return true;
+}
+
+// ══════════════════════════════════════════════════
+// TAXA DE QUEIMA — burn rate em tempo real (Elon Musk)
+// ══════════════════════════════════════════════════
+let _burnRateInterval = null;
+
+function renderBurnRate() {
+  const el = document.getElementById('burnRateOdometro');
+  if (!el || !appReady) return;
+  const mensal   = totalDesp();
+  const porDia   = mensal / 30;
+  const porHora  = porDia / 24;
+  const porSeg   = porHora / 3600;
+
+  const infoEl = document.getElementById('burnRateDiaHora');
+  if (infoEl) infoEl.textContent = `${fmtD(porDia)}/dia · ${fmtD(porHora)}/hora`;
+
+  const agora = new Date();
+  const meiaNoite = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const segundosHoje = (agora - meiaNoite) / 1000;
+  el.textContent = fmtD(segundosHoje * porSeg);
+}
+
+function _iniciarBurnRateTicker() {
+  clearInterval(_burnRateInterval);
+  renderBurnRate();
+  _burnRateInterval = setInterval(renderBurnRate, 1000);
 }
 
 function renderCentavoDashboardCard() {

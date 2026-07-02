@@ -1086,7 +1086,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     scrollbar-width: none;
     position: fixed; bottom: 0; left: 0; right: 0;
     background: var(--nav-bg-mob);
-    backdrop-filter: blur(18px);
     border-top: 1px solid var(--border-md);
     box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     z-index: 200;
@@ -2482,6 +2481,7 @@ async function loadFromCloud() {
 }
 
 let _realtimeSettleTimer = null;
+let _realtimeRenderTimer = null;
 function setupRealtime() {
   db.channel('planilha-sync')
     .on(
@@ -2502,13 +2502,21 @@ function setupRealtime() {
         const elAtivos = document.getElementById('metaAtivos');
         if (elAtivos) elAtivos.value = S.ativos || 0;
 
-        // Re-renderizar tudo
-        renderDashboard();
-        renderOrcamento();
-        renderDividas();
-        calcJuros();
-        renderMetas();
-        renderDiagnostico();
+        // Agrupa os re-renders: se varias atualizacoes chegarem em sequencia
+        // rapida (varias sessoes/dispositivos salvando quase ao mesmo tempo),
+        // reconstroi a UI so uma vez, apos as atualizacoes pararem — evita
+        // dezenas de reconstrucoes completas do dashboard por segundo, que
+        // causavam repaint visivel nos elementos com fundo desfocado (menu
+        // fixo) mesmo sem o usuario tocar na tela.
+        clearTimeout(_realtimeRenderTimer);
+        _realtimeRenderTimer = setTimeout(() => {
+          renderDashboard();
+          renderOrcamento();
+          renderDividas();
+          calcJuros();
+          renderMetas();
+          renderDiagnostico();
+        }, 250);
 
         // Um único timer "de acomodação": se chegarem várias atualizações em
         // sequência rápida, cada uma cancela o timer anterior — evita que o

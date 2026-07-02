@@ -1626,6 +1626,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
       <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
+      <button class="nav-tab" onclick="showSection('primeirosprincipios',this)"><span class="nt-icon">🚀</span>Primeiros Princípios</button>
       <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
     </nav>
   </div>
@@ -2169,6 +2170,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </section>
 
 <!-- ══════════════════════════════════════════
+     PRIMEIROS PRINCÍPIOS
+══════════════════════════════════════════ -->
+<section class="section" id="s-primeirosprincipios">
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">🚀 Primeiros Princípios</h1>
+      <p class="section-sub">O algoritmo de 5 passos: questione o requisito, delete, simplifique, acelere — automatize por último.</p>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center;margin-bottom:16px">
+    <div class="card-title" style="margin:0 0 10px">Potencial de Corte Imediato</div>
+    <div id="ppCorteTotal" style="font-size:38px;font-weight:900;letter-spacing:-1.5px;color:var(--red);text-shadow:0 0 24px rgba(192,98,72,0.3)">R$ 0/mês</div>
+    <div id="ppCorteAnual" style="font-size:12px;color:var(--text3);margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Cada categoria, sob o algoritmo</div>
+    <div id="ppList"></div>
+  </div>
+
+  <div class="info-box" style="margin-top:16px">
+    <strong>O algoritmo (Elon Musk, Tesla/SpaceX):</strong> 1) Questione cada requisito — a maioria sobrevive só porque ninguém perguntou de novo. 2) Delete a peça ou processo — a mais barata é a que não existe. 3) Simplifique o que restar. 4) Acelere o ciclo. 5) Automatize por último — nunca automatize algo que devia ter sido deletado.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
      ARQUITETURA DO FUTURO
 ══════════════════════════════════════════ -->
 <section class="section" id="s-futuro">
@@ -2301,6 +2329,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('metas',this);syncBottomNav(this)"><span class="bn-icon">🎯</span>Metas</button>
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
+  <button onclick="showSection('primeirosprincipios',this);syncBottomNav(this)"><span class="bn-icon">🚀</span>Princípios</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
   <div class="bottom-nav-fade" id="bottomNavFade"></div>
 </nav>
@@ -2690,6 +2719,7 @@ function showSection(id, btn) {
   if (id === 'centavo')    renderCentavo();
   if (id === 'reserva')    { _initReservaForm(); renderReserva(); }
   if (id === 'virtudes')   renderVirtudes();
+  if (id === 'primeirosprincipios') renderPrimeirosPrincipios();
   if (id === 'futuro')     renderFuturo();
   if (id === 'dados')      renderDados();
   if (id === 'diagnostico') renderDiagnostico();
@@ -4042,7 +4072,7 @@ function goToResult(section) {
   showSection(section, tab);
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['centavo','dashboard','diagnostico','orcamento','dividas','juros','metas','reserva','virtudes','futuro'][i] === section);
+    b.classList.toggle('active', ['centavo','dashboard','diagnostico','orcamento','dividas','juros','metas','reserva','virtudes','primeirosprincipios','futuro'][i] === section);
   });
 }
 
@@ -5315,6 +5345,76 @@ function renderVirtudes() {
 function saveVirtBudget(cat, val) {
   S.orcamentoCats[cat] = parseFloat(val) || 0;
   save(); renderVirtudes();
+}
+
+// ══════════════════════════════════════════════════
+// PRIMEIROS PRINCÍPIOS — algoritmo de 5 passos (Elon Musk)
+// ══════════════════════════════════════════════════
+const PP_CLASSIFICACAO = {
+  'Moradia':                  { veredito: 'manter',     motivo: 'Necessidade básica — questione o valor pago, não a existência do gasto.' },
+  'Alimentação':              { veredito: 'manter',     motivo: 'Necessidade básica — revise os componentes de conveniência dentro dela (delivery, impulso).' },
+  'Transporte':               { veredito: 'manter',     motivo: 'Necessidade básica de mobilidade.' },
+  'Saúde':                    { veredito: 'manter',     motivo: 'Inegociável.' },
+  'Educação':                 { veredito: 'acelerar',   motivo: 'Investimento em você mesmo, não gasto — acelere, não corte.' },
+  'Investimentos':            { veredito: 'acelerar',   motivo: 'Isso não é gasto, é construção de patrimônio. Acelere, não corte.' },
+  'Lazer':                    { veredito: 'simplificar',motivo: 'Sustenta a disciplina no longo prazo — mas exige um teto definido.' },
+  'Desnecessário (Impulsos)': { veredito: 'deletar',    motivo: 'O nome já é o veredito. Primeira coisa a sumir.' },
+  'Outros':                   { veredito: 'questionar', motivo: 'Categoria genérica costuma esconder gasto de impulso não classificado — vasculhe item por item.' },
+};
+const PP_VEREDITO_CFG = {
+  deletar:     { label: '🗑️ DELETAR',     color: 'var(--red)',        peso: 0 },
+  questionar:  { label: '❓ QUESTIONAR',   color: '#D4932A',           peso: 1 },
+  simplificar: { label: '✂️ SIMPLIFICAR', color: 'var(--gold-bright)', peso: 2 },
+  manter:      { label: '✓ MANTER',       color: 'var(--green)',      peso: 3 },
+  acelerar:    { label: '🚀 ACELERAR',    color: 'var(--blue)',       peso: 4 },
+};
+
+function renderPrimeirosPrincipios() {
+  if (!appReady) return;
+  const totalEl  = document.getElementById('ppCorteTotal');
+  const anualEl  = document.getElementById('ppCorteAnual');
+  const list     = document.getElementById('ppList');
+  if (!list) return;
+
+  const byCat = {};
+  S.despesas.forEach(d => { byCat[d.cat] = (byCat[d.cat] || 0) + (d.valor || 0); });
+  const totalDespesas = Object.values(byCat).reduce((s, v) => s + v, 0);
+
+  if (Object.keys(byCat).length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">🚀</div>Registre despesas no Orçamento para rodar o algoritmo.</div>`;
+    if (totalEl) totalEl.textContent = fmt(0) + '/mês';
+    if (anualEl) anualEl.textContent = '';
+    return;
+  }
+
+  const linhas = Object.entries(byCat).map(([cat, valor]) => {
+    const info = PP_CLASSIFICACAO[cat] || { veredito: 'questionar', motivo: 'Categoria não mapeada — pergunte-se se ela precisa existir do jeito que está.' };
+    return { cat, valor, pct: totalDespesas > 0 ? (valor / totalDespesas) * 100 : 0, ...info };
+  }).sort((a, b) => {
+    const pa = PP_VEREDITO_CFG[a.veredito].peso, pb = PP_VEREDITO_CFG[b.veredito].peso;
+    return pa !== pb ? pa - pb : b.valor - a.valor;
+  });
+
+  const corteTotal = linhas
+    .filter(l => l.veredito === 'deletar' || l.veredito === 'questionar')
+    .reduce((s, l) => s + l.valor, 0);
+
+  if (totalEl) totalEl.textContent = fmt(corteTotal) + '/mês';
+  if (anualEl) anualEl.textContent = corteTotal > 0
+    ? `${fmt(corteTotal * 12)}/ano se sustentado — essa é a peça que não precisa existir.`
+    : 'Nenhuma categoria em corte imediato agora — o algoritmo está satisfeito.';
+
+  list.innerHTML = linhas.map(l => {
+    const cfg = PP_VEREDITO_CFG[l.veredito];
+    return `<div style="padding:14px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;flex-wrap:wrap">
+        <strong style="font-size:13.5px">${l.cat}</strong>
+        <span style="font-size:11px;font-weight:800;color:${cfg.color};padding:3px 10px;border-radius:100px;background:${cfg.color}20;white-space:nowrap">${cfg.label}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text3)">${fmtD(l.valor)}/mês (${l.pct.toFixed(0)}% das despesas)</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic">${l.motivo}</div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════

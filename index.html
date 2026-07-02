@@ -6378,7 +6378,7 @@ async function pwaInstall() {
     'photo-1610652492500-ded49ceeb378'
   ];
   var BASE  = 'https://images.unsplash.com/';
-  var P_BG  = '?fm=jpg&q=85&w=1400&h=900&fit=crop&crop=faces&auto=format';
+  var P_BG  = '?fm=jpg&q=90&w=2560&h=1440&fit=crop&crop=top&auto=format';
   var P_BTN = '?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format';
   var last = parseInt(sessionStorage.getItem('pe_fi') || '-1');
   var idx;
@@ -6391,7 +6391,7 @@ async function pwaInstall() {
     if (hero) {
       hero.style.backgroundImage    = 'url("' + BASE + foto + P_BG  + '")';
       hero.style.backgroundSize     = 'cover';
-      hero.style.backgroundPosition = 'center top';
+      hero.style.backgroundPosition = 'center 15%';
       hero.style.backgroundRepeat   = 'no-repeat';
     }
     var btn = document.getElementById('gkAvatarBtn');

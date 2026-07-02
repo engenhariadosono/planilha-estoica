@@ -6362,5 +6362,51 @@ async function pwaInstall() {
   var timer = setInterval(aplicarFoto, 100);
   aplicarFoto();
 })();
-</script></body>
+</script><script>
+(function() {
+  'use strict';
+  var FOTOS = [
+    'photo-1754577060078-21315dd188c8',
+    'photo-1675383094481-3e2088da943b',
+    'photo-1617244147030-8bd6f9e21d1e',
+    'photo-1688120320226-a73ed520c8b7',
+    'photo-1580411402629-e0cdf76f3d3b',
+    'photo-1591470481729-2bcc11e3acb8',
+    'photo-1495603889488-42d1d66e5523',
+    'photo-1620511450270-47162b983078',
+    'photo-1732253134731-874d1b6e8d38',
+    'photo-1610652492500-ded49ceeb378'
+  ];
+  var BASE  = 'https://images.unsplash.com/';
+  var P_BG  = '?fm=jpg&q=85&w=1400&h=900&fit=crop&crop=faces&auto=format';
+  var P_BTN = '?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format';
+  var last = parseInt(sessionStorage.getItem('pe_fi') || '-1');
+  var idx;
+  do { idx = Math.floor(Math.random() * FOTOS.length); }
+  while (idx === last && FOTOS.length > 1);
+  sessionStorage.setItem('pe_fi', idx);
+  var foto = FOTOS[idx];
+  function aplicar() {
+    var hero = document.getElementById('authHero');
+    if (hero) {
+      hero.style.backgroundImage    = 'url("' + BASE + foto + P_BG  + '")';
+      hero.style.backgroundSize     = 'cover';
+      hero.style.backgroundPosition = 'center top';
+      hero.style.backgroundRepeat   = 'no-repeat';
+    }
+    var btn = document.getElementById('gkAvatarBtn');
+    if (btn) {
+      btn.innerHTML = '';
+      btn.style.backgroundImage    = 'url("' + BASE + foto + P_BTN + '")';
+      btn.style.backgroundSize     = 'cover';
+      btn.style.backgroundPosition = 'center top';
+      btn.style.backgroundRepeat   = 'no-repeat';
+    }
+    if (hero && btn) clearInterval(timer);
+  }
+  var timer = setInterval(aplicar, 100);
+  aplicar();
+})();
+</script>
+</body>
 </html>

@@ -1541,13 +1541,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="auth-overlay"></div>
   <div class="auth-grain"></div>
 
-  <!-- Botão fechar (só aparece quando overlay é aberto via logo) -->
-  <button onclick="closeAuthOverlay()" style="
+  <!-- Botão fechar (só aparece quando overlay é aberto via logo, com o app já carregado) -->
+  <button id="authCloseBtn" onclick="closeAuthOverlay()" style="
+    display:none;
     position:absolute;top:18px;right:18px;z-index:10;
     width:40px;height:40px;border-radius:50%;
     background:rgba(10,7,4,0.65);border:1px solid rgba(201,154,62,0.25);
     color:rgba(196,168,130,0.85);font-size:20px;line-height:1;
-    cursor:pointer;backdrop-filter:blur(8px);display:flex;
+    cursor:pointer;backdrop-filter:blur(8px);
     align-items:center;justify-content:center;
     transition:background 0.2s,border-color 0.2s;
   " onmouseover="this.style.background='rgba(201,154,62,0.18)';this.style.borderColor='rgba(201,154,62,0.5)'"
@@ -2125,13 +2126,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="form-row">
       <div class="form-group">
         <label>Já reservei (R$)</label>
-        <input type="number" id="reservaAcumulado" placeholder="0,00" min="0"
-               oninput="renderReserva()" onchange="saveReserva()">
+        <input type="number" id="reservaAcumulado" placeholder="0,00" min="0" oninput="renderReserva()">
       </div>
       <div class="form-group">
         <label>Meta manual (R$) — opcional</label>
-        <input type="number" id="reservaMetaCustom" placeholder="Auto: gastos × 6" min="0"
-               oninput="renderReserva()" onchange="saveReserva()">
+        <input type="number" id="reservaMetaCustom" placeholder="Auto: gastos × 6" min="0" oninput="renderReserva()">
       </div>
     </div>
     <div id="reservaMetaInfo" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
@@ -2142,11 +2141,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="form-row">
       <div class="form-group" style="max-width:200px">
         <label>Completar em (meses)</label>
-        <input type="number" id="reservaPrazo" value="12" min="1" max="120"
-               oninput="renderReserva()" onchange="saveReserva()">
+        <input type="number" id="reservaPrazo" value="12" min="1" max="120" oninput="renderReserva()">
       </div>
     </div>
     <div id="reservaCalc" style="margin-top:12px"></div>
+    <button class="btn btn-primary" onclick="saveReserva()" style="width:100%;margin-top:14px;padding:14px;font-size:14px">💾 Salvar Reserva</button>
+    <div id="reservaSalvoInfo" style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center"></div>
   </div>
 </section>
 
@@ -4210,6 +4210,8 @@ function showGatekeeper() {
   if (!ov) return;
   ov.style.display = '';
   ov.classList.remove('hiding');
+  const closeBtn = document.getElementById('authCloseBtn');
+  if (closeBtn) closeBtn.style.display = 'flex';
   const box = document.getElementById('authBox');
   if (box) { box.style.transform = ''; box.style.opacity = ''; }
   _preloadSplashImage();
@@ -4235,28 +4237,14 @@ function showGatekeeper() {
 }
 
 // ══════════════════════════════════════════════════
-// SPLASH — IDENTIDADE VISUAL DINÂMICA
+// SPLASH — TELA DE BLOQUEIO (foto fixa, estática)
 // ══════════════════════════════════════════════════
-// Curadoria: países, pessoas sorrindo e bem-estar
-// auto=format → Unsplash/Imgix entrega WebP para Chrome/Android
-const _SPLASH_URLS = [
-  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Amigos sorrindo juntos
-  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Mulher rindo feliz
-  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Yoga / meditação ao nascer do sol
-  'https://images.unsplash.com/photo-1499856871958-5b9357976b82?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Paris — Torre Eiffel
-  'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Marrocos — cidade azul
-  'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Maldivas — paraíso tropical
-  'https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy', // Praia / alegria de viver
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1080&h=1920&q=80&crop=entropy',    // Retrato sorriso genuíno
-];
+// Foto única e fixa — não sorteia nem troca entre sessões.
+// Só muda visualmente quando o usuário toca no ícone central (autenticação).
+const _SPLASH_URL = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1080&h=1920&q=85&crop=faces';
 
 function _preloadSplashImage() {
-  // Uma imagem por sessão: evita re-download e troca inesperada
-  let url = sessionStorage.getItem('pe-splash-url');
-  if (!url) {
-    url = _SPLASH_URLS[Math.floor(Math.random() * _SPLASH_URLS.length)];
-    sessionStorage.setItem('pe-splash-url', url);
-  }
+  const url = _SPLASH_URL;
   const hero = document.getElementById('authHero');
   if (!hero) return;
   const img = new Image();
@@ -5167,8 +5155,8 @@ function _initReservaForm() {
   const acEl = document.getElementById('reservaAcumulado');
   const mcEl = document.getElementById('reservaMetaCustom');
   const prEl = document.getElementById('reservaPrazo');
-  if (acEl && !acEl.dataset.dirty) acEl.value = r.acumulado || '';
-  if (mcEl && !mcEl.dataset.dirty) mcEl.value = r.metaCustom || '';
+  if (acEl) acEl.value = r.acumulado || '';
+  if (mcEl) mcEl.value = r.metaCustom || '';
   if (prEl) prEl.value = r.prazo || 12;
 }
 
@@ -5251,6 +5239,15 @@ function saveReserva() {
   S.reserva.metaCustom = parseFloat(document.getElementById('reservaMetaCustom')?.value) || 0;
   S.reserva.prazo      = parseInt(document.getElementById('reservaPrazo')?.value) || 12;
   save();
+  renderReserva();
+  renderMetaPrincipalWidget(); // reflete na hora no card do Dashboard, mesmo sem trocar de aba
+  renderMetas();               // card "Reserva de Emergência" dentro de Metas também usa S.reserva
+  _showToast('✅ Reserva salva — já atualizada no Dashboard.');
+  const info = document.getElementById('reservaSalvoInfo');
+  if (info) {
+    info.textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}`;
+    setTimeout(() => { if (info.textContent.startsWith('Salvo')) info.textContent = ''; }, 4000);
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -5472,8 +5469,12 @@ function closeCheckin() {
 
 async function initApp() {
   initTheme();
-  // App abre direto — auth é ativada pelo clique no logo ⚖️ na barra de navegação
-  sessionStorage.setItem('pe-authed', '1');
+  const jaAutenticado = sessionStorage.getItem('pe-authed') === '1';
+  if (!jaAutenticado) {
+    // Trava o app: exige criar/inserir a chave (e biometria, se disponível) antes de entrar
+    initAuth();
+    return;
+  }
   const ov = document.getElementById('authOverlay');
   if (ov) ov.style.display = 'none';
   await _bootApp();

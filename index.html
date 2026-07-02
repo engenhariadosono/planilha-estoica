@@ -1299,6 +1299,59 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .ci-close { margin-top: 12px; padding: 11px; background: none; border: 1px solid var(--border); border-radius: 12px; color: var(--text3); font-size: 13px; cursor: pointer; font-family: inherit; width: 100%; transition: border-color 0.2s; }
 .ci-close:hover { border-color: var(--border-md); color: var(--text2); }
 
+/* ─── RITUAL DE INTENÇÃO ─── */
+#ritualModal {
+  display: none; position: fixed; inset: 0; z-index: 4600;
+  background: rgba(0,0,0,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  align-items: center; justify-content: center; padding: 24px;
+}
+#ritualModal.rit-open { display: flex; }
+.rit-box {
+  width: 100%; max-width: 380px;
+  background: rgba(18,10,4,0.94); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(201,154,62,0.22); border-radius: 28px; padding: 36px 26px 26px; text-align: center;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.04) inset, 0 32px 80px rgba(0,0,0,0.80);
+  transform: scale(0.9); opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+}
+#ritualModal.rit-open .rit-box { transform: scale(1); opacity: 1; }
+.rit-icon  { font-size: 46px; margin-bottom: 14px; filter: drop-shadow(0 0 16px rgba(201,154,62,0.4)); }
+.rit-title { font-size: 19px; font-weight: 800; color: var(--gold-bright); margin-bottom: 8px; line-height: 1.3; }
+.rit-sub   { font-size: 12.5px; color: var(--text3); line-height: 1.6; margin-bottom: 22px; }
+.rit-input {
+  width: 100%; min-height: 84px; resize: none;
+  background: var(--surface2); border: 1px solid var(--border-md); border-radius: 14px;
+  padding: 14px; color: var(--text); font-size: 14px; font-family: inherit; line-height: 1.5;
+  margin-bottom: 16px; box-sizing: border-box;
+}
+.rit-input:focus { outline: none; border-color: var(--gold); }
+.rit-submit {
+  width: 100%; padding: 15px; background: linear-gradient(135deg, #C99A3E, #A07830);
+  border: none; border-radius: 14px; color: #0A0704; font-size: 14px; font-weight: 800;
+  cursor: pointer; font-family: inherit; transition: opacity 0.2s;
+}
+.rit-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.rit-submit:hover:not(:disabled) { opacity: 0.88; }
+.rit-skip { margin-top: 10px; padding: 11px; background: none; border: 1px solid var(--border); border-radius: 12px; color: var(--text3); font-size: 13px; cursor: pointer; font-family: inherit; width: 100%; transition: border-color 0.2s; }
+.rit-skip:hover { border-color: var(--border-md); color: var(--text2); }
+.rit-result { padding: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; }
+.rit-result-text { font-size: 14px; color: var(--gold-bright); font-weight: 700; line-height: 1.5; font-style: italic; }
+.rit-streak { font-size: 12px; color: var(--gold); margin-top: 8px; font-weight: 600; }
+
+/* Banner fixo no Dashboard com a intenção do dia */
+.ritual-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(201,154,62,0.14), rgba(201,154,62,0.04));
+  border: 1px solid rgba(201,154,62,0.28); border-radius: 16px;
+  padding: 14px 16px; margin-bottom: 16px; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.ritual-banner:hover { border-color: var(--gold); }
+.ritual-banner .rb-icon { font-size: 22px; flex-shrink: 0; }
+.ritual-banner .rb-text { flex: 1; min-width: 0; }
+.ritual-banner .rb-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 3px; }
+.ritual-banner .rb-value { font-size: 13.5px; color: var(--text); font-weight: 600; line-height: 1.4; overflow-wrap: break-word; }
+
 /* ─── IMPORTAÇÃO INTELIGENTE ─── */
 .import-trigger-btn {
   display: inline-flex; align-items: center; gap: 7px;
@@ -1662,6 +1715,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
      DASHBOARD
 ══════════════════════════════════════════ -->
 <section class="section active" id="s-dashboard">
+
+  <!-- RITUAL DE INTENÇÃO — fixado o dia todo, visível em qualquer modo -->
+  <div class="ritual-banner" id="ritualBanner" style="display:none" onclick="openRitual()"></div>
 
   <!-- MODO FOCO — widget centralizado -->
   <div class="focus-widget" id="focusWidget">
@@ -2581,6 +2637,7 @@ let S = {
   orcamentoCats: {},
   marcos: [],
   checkIn: { ultimo: '', streak: 0 },
+  ritual: { ultimo: '', texto: '', streak: 0 },
   contasUrgentes: [],
   diagnosticos: {},
   centavo: { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }
@@ -3689,6 +3746,7 @@ function renderContasUrgentes() {
 
 function renderDashboard() {
   if (!appReady) return;
+  renderRitualBanner();
   const renda = totalRec(), desp = totalDesp(), saldo = saldoMes(), taxa = taxaPoupa();
   const totDiv = totalDiv(), patLiq = patriLiq();
 
@@ -4415,6 +4473,7 @@ function importBackup(event) {
       S.orcamentoCats = S.orcamentoCats|| {};
       S.marcos        = S.marcos       || [];
       S.checkIn       = S.checkIn      || { ultimo:'', streak:0 };
+      S.ritual        = S.ritual       || { ultimo:'', texto:'', streak:0 };
       S.pagas         = S.pagas        || [];
       S.centavo       = S.centavo      || { diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false };
       save();
@@ -4476,7 +4535,7 @@ function _confirmarLimpeza() {
     receitas:[], despesas:[], dividas:[], pagas:[],
     strategy:'avalanche', ativos:0,
     reserva:{ acumulado:0, metaCustom:0, prazo:12 },
-    orcamentoCats:{}, marcos:[], checkIn:{ ultimo:'', streak:0 },
+    orcamentoCats:{}, marcos:[], checkIn:{ ultimo:'', streak:0 }, ritual:{ ultimo:'', texto:'', streak:0 },
     centavo:{ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false },
   });
   save();
@@ -4493,13 +4552,14 @@ async function _bootApp() {
   S.orcamentoCats= S.orcamentoCats|| {};
   S.marcos       = S.marcos       || [];
   S.checkIn      = S.checkIn      || { ultimo: '', streak: 0 };
+  S.ritual       = S.ritual       || { ultimo: '', texto: '', streak: 0 };
   S.centavo      = S.centavo      || { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
   appReady = true;
   const el = document.getElementById('metaAtivos');
   if (el) el.value = S.ativos || 0;
   renderDashboard(); renderOrcamento(); renderDividas(); calcJuros(); renderMetas();
   initFocus(); setupRealtime(); _initDateDefaults();
-  _triggerCheckin();
+  _triggerRitual(); _triggerCheckin();
   renderDados();
   _initBottomNavFade();
 }
@@ -5606,6 +5666,74 @@ function closeCheckin() {
   setTimeout(()=>{ modal.classList.remove('ci-open'); if(box){box.style.transform='';box.style.opacity='';} }, 320);
 }
 
+// ══════════════════════════════════════════════════
+// RITUAL DE INTENÇÃO — foco diário
+// ══════════════════════════════════════════════════
+// "Implementation intentions" (Gollwitzer): declarar por escrito, ANTES de
+// agir, o que se pretende fazer aumenta a adesão à meta. Dispara uma vez por
+// dia na primeira abertura do app (diferente do check-in, que é à noite) e
+// fica fixado no Dashboard o dia todo para reforçar o foco.
+function _triggerRitual() {
+  if ((S.ritual?.ultimo||'') === todayISO()) return;
+  setTimeout(openRitual, 1400);
+}
+
+function openRitual() {
+  const modal = document.getElementById('ritualModal');
+  if (!modal) return;
+  document.getElementById('ritQuestion').style.display = 'block';
+  document.getElementById('ritResult').style.display = 'none';
+  const input = document.getElementById('ritInput');
+  input.value = (S.ritual?.ultimo === todayISO()) ? (S.ritual.texto||'') : '';
+  document.getElementById('ritSubmitBtn').disabled = !input.value.trim();
+  modal.classList.add('rit-open');
+  setTimeout(() => input.focus(), 350);
+}
+
+function handleRitual() {
+  const texto = document.getElementById('ritInput').value.trim();
+  if (!texto) return;
+  if (!S.ritual) S.ritual = { ultimo:'', texto:'', streak:0 };
+  const hoje = todayISO();
+  if (S.ritual.ultimo !== hoje) {
+    const ontem = new Date(); ontem.setDate(ontem.getDate()-1);
+    const ontemISO = `${ontem.getFullYear()}-${String(ontem.getMonth()+1).padStart(2,'0')}-${String(ontem.getDate()).padStart(2,'0')}`;
+    S.ritual.streak = (S.ritual.ultimo===ontemISO) ? (S.ritual.streak||0)+1 : 1;
+    S.ritual.ultimo = hoje;
+  }
+  S.ritual.texto = texto;
+  save();
+
+  document.getElementById('ritResultText').textContent = `"${texto}"`;
+  const streak = S.ritual.streak;
+  document.getElementById('ritStreak').textContent = streak>1 ? `🔥 ${streak} dias seguidos de compromisso` : '';
+  document.getElementById('ritQuestion').style.display = 'none';
+  document.getElementById('ritResult').style.display = 'block';
+  renderRitualBanner();
+}
+
+function closeRitual() {
+  const modal = document.getElementById('ritualModal');
+  if (!modal) return;
+  const box = modal.querySelector('.rit-box');
+  if (box) { box.style.transform='scale(0.9)'; box.style.opacity='0'; }
+  setTimeout(()=>{ modal.classList.remove('rit-open'); if(box){box.style.transform='';box.style.opacity='';} }, 320);
+}
+
+function renderRitualBanner() {
+  const el = document.getElementById('ritualBanner');
+  if (!el) return;
+  const ativo = S.ritual?.ultimo === todayISO() && S.ritual?.texto;
+  if (!ativo) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <div class="rb-icon">🎯</div>
+    <div class="rb-text">
+      <div class="rb-label">Foco de hoje</div>
+      <div class="rb-value">${S.ritual.texto}</div>
+    </div>`;
+}
+
 async function initApp() {
   initTheme();
   const jaAutenticado = sessionStorage.getItem('pe-authed') === '1';
@@ -6147,6 +6275,29 @@ async function pwaInstall() {
     </div>
 
     <button class="ci-close" onclick="closeCheckin()">Fechar</button>
+  </div>
+</div>
+
+<!-- ══════ RITUAL DE INTENÇÃO ══════ -->
+<div id="ritualModal">
+  <div class="rit-box">
+    <div class="rit-icon">🎯</div>
+    <div class="rit-title">Qual é o seu foco hoje?</div>
+    <div class="rit-sub">"Você tem poder sobre sua mente — não sobre eventos externos." Declare sua intenção antes de agir.</div>
+
+    <div id="ritQuestion">
+      <textarea id="ritInput" class="rit-input" maxlength="140" placeholder="Hoje eu vou..." oninput="document.getElementById('ritSubmitBtn').disabled = !this.value.trim()"></textarea>
+      <button id="ritSubmitBtn" class="rit-submit" disabled onclick="handleRitual()">Selar compromisso</button>
+      <button class="rit-skip" onclick="closeRitual()">Agora não</button>
+    </div>
+
+    <div id="ritResult" style="display:none">
+      <div class="rit-result">
+        <div class="rit-result-text" id="ritResultText"></div>
+        <div class="rit-streak" id="ritStreak"></div>
+      </div>
+      <button class="rit-skip" style="margin-top:14px" onclick="closeRitual()">Começar o dia</button>
+    </div>
   </div>
 </div>
 

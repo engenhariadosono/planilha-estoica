@@ -1,0 +1,5 @@
+# Backups locais — nunca devem ser publicados
+index_original.html
+*_original.html
+*.bak.html
+deploy.ps1

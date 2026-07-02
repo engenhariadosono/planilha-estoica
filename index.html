@@ -2654,6 +2654,20 @@ function save() {
   _saveTimer = setTimeout(syncToCloud, 600);
 }
 
+// Se o app for para segundo plano (troca de app, tela bloqueada, aba fechada)
+// antes dos 600ms do debounce acima, o salvamento na nuvem nunca dispara —
+// e na próxima abertura loadFromCloud() sobrescreve o dispositivo com o
+// estado antigo da nuvem, "perdendo" a última ação (ex.: marcar o dia no
+// Desafio do Centavo). visibilitychange dispara de forma confiável antes do
+// app ser suspenso, mesmo no mobile — então força o envio imediato aqui.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && _saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+    syncToCloud();
+  }
+});
+
 // ══════════════════════════════════════════════════
 // FORMATAÇÃO
 // ══════════════════════════════════════════════════
@@ -4475,7 +4489,7 @@ function importBackup(event) {
       S.checkIn       = S.checkIn      || { ultimo:'', streak:0 };
       S.ritual        = S.ritual       || { ultimo:'', texto:'', streak:0 };
       S.pagas         = S.pagas        || [];
-      S.centavo       = S.centavo      || { diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false };
+      S.centavo       = Object.assign({ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false }, S.centavo || {});
       save();
       renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
       _showToast('✅ Backup restaurado com sucesso!');
@@ -4553,7 +4567,10 @@ async function _bootApp() {
   S.marcos       = S.marcos       || [];
   S.checkIn      = S.checkIn      || { ultimo: '', streak: 0 };
   S.ritual       = S.ritual       || { ultimo: '', texto: '', streak: 0 };
-  S.centavo      = S.centavo      || { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false };
+  // Object.assign (não ||) para preencher campos que faltem em registros antigos
+  // (ex.: contas criadas antes de valoresManuais/modoManual/concluido existirem)
+  // sem descartar diaAtual/datasMarcadas já salvos.
+  S.centavo      = Object.assign({ diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }, S.centavo || {});
   appReady = true;
   const el = document.getElementById('metaAtivos');
   if (el) el.value = S.ativos || 0;

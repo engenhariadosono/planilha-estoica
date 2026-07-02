@@ -1650,8 +1650,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <span class="tt-icon" id="themeIcon">☀️</span>
       <span id="themeLabel">Light</span>
     </button>
-    <div id="syncStatus" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);white-space:nowrap">
-      <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background 0.4s,box-shadow 0.4s"></span>
+    <div id="syncStatus" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px;justify-content:flex-end">
+      <span id="syncDot" style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background 0.4s,box-shadow 0.4s"></span>
       <span id="syncLabel">local</span>
     </div>
   </div>
@@ -2481,6 +2481,7 @@ async function loadFromCloud() {
   }
 }
 
+let _realtimeSettleTimer = null;
 function setupRealtime() {
   db.channel('planilha-sync')
     .on(
@@ -2509,7 +2510,12 @@ function setupRealtime() {
         renderMetas();
         renderDiagnostico();
 
-        setTimeout(() => setSyncStatus('realtime'), 1800);
+        // Um único timer "de acomodação": se chegarem várias atualizações em
+        // sequência rápida, cada uma cancela o timer anterior — evita que o
+        // indicador fique piscando entre "Recebendo"/"Tempo Real" a cada
+        // evento (timers sobrepostos), esperando 1.8s de silêncio pra assentar.
+        clearTimeout(_realtimeSettleTimer);
+        _realtimeSettleTimer = setTimeout(() => setSyncStatus('realtime'), 1800);
       }
     )
     .subscribe((status) => {

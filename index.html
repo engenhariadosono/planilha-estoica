@@ -234,6 +234,21 @@ body {
 .kpi-card.green::before { background: linear-gradient(90deg, #1A3D28, var(--green), #1A3D28); box-shadow: 0 0 16px rgba(78,170,114,0.4); }
 .kpi-card.red::before   { background: linear-gradient(90deg, #3E1810, var(--red), #3E1810);   box-shadow: 0 0 16px rgba(192,98,72,0.4); }
 .kpi-card.blue::before  { background: linear-gradient(90deg, #122040, var(--blue), #122040);  box-shadow: 0 0 16px rgba(74,126,196,0.4); }
+
+/* ── Glow pulsante nas áreas críticas (Patrimônio Líquido / Despesas / Dívidas) ── */
+@keyframes kpiGlowGold {
+  0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.025) inset, 0 0 0 rgba(201,154,62,0); }
+  50%      { box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.025) inset, 0 0 32px 3px rgba(201,154,62,0.55); }
+}
+@keyframes kpiGlowRed {
+  0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.025) inset, 0 0 0 rgba(224,90,60,0); }
+  50%      { box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.025) inset, 0 0 32px 3px rgba(224,90,60,0.55); }
+}
+.kpi-card.gold { animation: kpiGlowGold 3.6s ease-in-out infinite; }
+.kpi-card.red  { animation: kpiGlowRed 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card.gold, .kpi-card.red { animation: none; }
+}
 .kpi-label { font-size: 9px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; }
 .kpi-value { font-size: 20px; font-weight: 900; letter-spacing: -0.9px; line-height: 1; }
 .kpi-value.gold  { color: var(--gold-bright); text-shadow: 0 0 20px rgba(201,154,62,0.3); }

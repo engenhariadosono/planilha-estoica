@@ -6380,11 +6380,11 @@ async function pwaInstall() {
   var BASE  = 'https://images.unsplash.com/';
   var P_BG  = '?fm=jpg&q=90&w=2560&h=1440&fit=crop&crop=top&auto=format';
   var P_BTN = '?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format';
-  var last = parseInt(localStorage.getItem('pe_fi_last') || '-1');
+  var last = parseInt(sessionStorage.getItem('pe_fi') || '-1');
   var idx;
   do { idx = Math.floor(Math.random() * FOTOS.length); }
   while (idx === last && FOTOS.length > 1);
-  localStorage.setItem('pe_fi_last', idx);
+  sessionStorage.setItem('pe_fi', idx);
   var foto = FOTOS[idx];
   function aplicar() {
     var hero = document.getElementById('authHero');
@@ -6410,14 +6410,34 @@ async function pwaInstall() {
 </script>
 <script>
 (function(){
-  var startY=0,pulling=false;
-  var ind=document.createElement('div');
-  ind.style.cssText='position:fixed;top:-60px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.18);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;transition:top 0.15s ease;z-index:99999;pointer-events:none;box-shadow:0 2px 12px rgba(0,0,0,0.3);';
-  ind.textContent='↓';
-  document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(ind);});
-  document.addEventListener('touchstart',function(e){if(window.scrollY===0){startY=e.touches[0].clientY;pulling=true;}},{passive:true});
-  document.addEventListener('touchmove',function(e){if(!pulling)return;var d=e.touches[0].clientY-startY;if(d>0&&d<130){ind.style.top=Math.min(d-20,65)+'px';ind.textContent=d>85?'↺':'↓';}},{passive:true});
-  document.addEventListener('touchend',function(e){if(!pulling)return;var d=e.changedTouches[0].clientY-startY;ind.style.top='-60px';if(d>85){ind.textContent='↺';setTimeout(function(){location.reload();},250);}pulling=false;startY=0;},{passive:true});
+  var navMap={
+    'Patrimônio Líquido':'futuro',
+    'Renda Mensal':'orcamento',
+    'Despesas Mensais':'orcamento',
+    'Saldo Mensal':'orcamento',
+    'Taxa de Poupança':'metas',
+    'Total de Dívidas':'dividas'
+  };
+  function attachKpi(){
+    document.querySelectorAll('.kpi-card').forEach(function(card){
+      if(card.dataset.nav)return;
+      var label=card.querySelector('.kpi-label');
+      var sec=label&&navMap[label.textContent.trim()];
+      if(sec){
+        card.style.cursor='pointer';
+        card.dataset.nav=sec;
+        card.addEventListener('click',function(){
+          var tab=document.querySelector('.nav-tab[onclick*="'+sec+'"]');
+          if(typeof showSection==='function')showSection(sec,tab);
+        });
+      }
+    });
+  }
+  var t;
+  new MutationObserver(function(){clearTimeout(t);t=setTimeout(attachKpi,80);})
+    .observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',attachKpi);
+  setTimeout(attachKpi,800);
 })();
 </script>
 </body>

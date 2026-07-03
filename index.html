@@ -2124,13 +2124,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <span id="centavoPctLabel">0%</span>
     </div>
     <button class="btn btn-primary" id="centavoMarcarBtn" onclick="marcarDiaCentavo()" style="margin-top:20px;width:100%;font-size:14px;padding:14px">Marquei hoje ✓</button>
+    <button class="btn btn-sm" id="centavoManualToggleBtn" onclick="toggleCentavoManual(true)" style="display:none;margin-top:10px;width:100%;background:none;border:1px solid var(--border-md);color:var(--text3)">💰 Prefiro definir o valor manualmente</button>
 
     <div id="centavoManualFormWrap" style="display:none;margin-top:20px;text-align:left">
-      <div style="font-size:12px;color:var(--gold-bright);margin-bottom:8px">⚠️ O valor automático deste dia passaria de R$ 500. Defina quanto você vai guardar hoje para continuar:</div>
+      <div id="centavoManualMsg" style="font-size:12px;color:var(--gold-bright);margin-bottom:8px">⚠️ O valor automático deste dia passaria de R$ 500. Defina quanto você vai guardar hoje para continuar:</div>
       <div style="display:flex;gap:8px">
         <input type="number" id="centavoValorManualInput" placeholder="0,00" min="0.01" step="0.01" style="flex:1;height:44px">
         <button class="btn btn-primary" onclick="confirmarValorManualCentavo()" style="white-space:nowrap;padding:0 20px">Confirmar</button>
       </div>
+      <button class="btn btn-sm" id="centavoManualVoltarBtn" onclick="toggleCentavoManual(false)" style="display:none;margin-top:10px;width:100%;background:none;border:none;color:var(--text3)">← Usar valor automático</button>
     </div>
 
     <button class="btn btn-sm" id="centavoFinalizarBtn" onclick="finalizarDesafioCentavo()" style="display:none;margin-top:12px;width:100%">🏁 Finalizar desafio prolongado</button>
@@ -4353,7 +4355,7 @@ function showGatekeeper() {
   document.getElementById('authSetup').style.display = 'none';
   const hasCred = _webAuthnOk() && !!localStorage.getItem(_CK);
   if (hasCred) {
-    loginBiometric();
+    // Estático — biometria só dispara ao tocar no ícone central (gkTapAuth)
   } else {
     const lbl = document.getElementById('gkTapLabel');
     if (lbl) lbl.textContent = 'Toque para inserir sua chave de acesso';
@@ -4389,10 +4391,10 @@ function initAuth() {
   document.getElementById('authLogin').style.display = '';
   const hasCred = _webAuthnOk() && !!localStorage.getItem(_CK);
   if (hasCred) {
-    // Auto-trigger biometria no mobile após 700ms
-    if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      setTimeout(loginBiometric, 700);
-    }
+    // Tela fica estática — biometria só dispara quando o usuário toca no
+    // ícone central (gkTapAuth). Antes disparava sozinha após 700ms no
+    // mobile, o que competia com o carregamento do vídeo de fundo e dava
+    // sensação de trava/bug na entrada.
   } else {
     // Sem biometria registrada: mostrar chave direto
     const lbl = document.getElementById('gkTapLabel');
@@ -5078,6 +5080,16 @@ function renderCentavoDashboardCard() {
   document.getElementById('centavoCardProgressBar').style.width = `${Math.min(100, (c.diaAtual / CENTAVO_DIAS_TOTAL) * 100)}%`;
 }
 
+// Estado só de UI (não persiste): usuário optou por informar o valor manual
+// mesmo num dia que não exigiria isso pela fórmula/limite automático.
+let _centavoManualUI = false;
+
+function toggleCentavoManual(show) {
+  _centavoManualUI = show;
+  renderCentavo();
+  if (show) setTimeout(() => document.getElementById('centavoValorManualInput')?.focus(), 50);
+}
+
 function renderCentavo() {
   if (!appReady) return;
   _centavoVerificarPerdido();
@@ -5088,6 +5100,9 @@ function renderCentavo() {
   const diaExibicao = concluido ? c.diaAtual : (jaMarcouHoje ? c.diaAtual : c.diaAtual + 1);
   // Precisa de valor manual quando a fórmula automática do próximo dia passaria do limite
   const precisaManual = !concluido && !jaMarcouHoje && _centavoValorFormula(diaExibicao) > CENTAVO_LIMITE_MANUAL;
+  // Manual "ativo" = obrigatório pelo limite OU escolhido voluntariamente pelo usuário
+  if (jaMarcouHoje || concluido) _centavoManualUI = false;
+  const manualAtivo = precisaManual || _centavoManualUI;
   const emProlongamento = c.modoManual && c.diaAtual >= CENTAVO_DIAS_TOTAL && !concluido;
 
   const diaLabel     = document.getElementById('centavoDiaLabel');
@@ -5096,7 +5111,10 @@ function renderCentavo() {
   const acumEl       = document.getElementById('centavoAcumuladoTotal');
   const pctEl        = document.getElementById('centavoPctLabel');
   const btn          = document.getElementById('centavoMarcarBtn');
+  const manualToggleBtn = document.getElementById('centavoManualToggleBtn');
   const manualWrap   = document.getElementById('centavoManualFormWrap');
+  const manualMsg    = document.getElementById('centavoManualMsg');
+  const manualVoltarBtn = document.getElementById('centavoManualVoltarBtn');
   const finalizarBtn = document.getElementById('centavoFinalizarBtn');
   const grid         = document.getElementById('centavoGrid');
   if (!diaLabel) return;
@@ -5111,13 +5129,18 @@ function renderCentavo() {
   pctEl.textContent = `${pct.toFixed(0)}%`;
 
   // Botão principal / formulário manual / finalizar prolongamento
-  manualWrap.style.display = (!concluido && precisaManual) ? '' : 'none';
+  manualWrap.style.display = (!concluido && manualAtivo) ? '' : 'none';
+  if (manualMsg) manualMsg.textContent = precisaManual
+    ? '⚠️ O valor automático deste dia passaria de R$ 500. Defina quanto você vai guardar hoje para continuar:'
+    : '💰 Defina quanto você vai guardar hoje:';
+  if (manualVoltarBtn) manualVoltarBtn.style.display = (!precisaManual && manualAtivo) ? '' : 'none';
+  if (manualToggleBtn) manualToggleBtn.style.display = (!concluido && !jaMarcouHoje && !manualAtivo) ? '' : 'none';
   finalizarBtn.style.display = emProlongamento ? '' : 'none';
   if (concluido) {
     btn.style.display = '';
     btn.textContent = '🏆 Desafio concluído';
     btn.disabled = true;
-  } else if (precisaManual) {
+  } else if (manualAtivo) {
     btn.style.display = 'none';
   } else if (jaMarcouHoje) {
     btn.style.display = '';

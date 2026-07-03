@@ -912,7 +912,26 @@ select option { background: var(--surface2); }
 .impulso-item-val  { font-size: 16px; font-weight: 800; color: #C0782A; }
 .impulso-actions { display: flex; gap: 10px; }
 .impulso-btn-ok  { flex: 1; padding: 15px; background: linear-gradient(135deg, #8A4010, #C0782A); border: none; border-radius: 12px; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; }
+.impulso-btn-ok:disabled { opacity: 0.4; cursor: not-allowed; }
 .impulso-btn-no  { padding: 15px 18px; background: linear-gradient(135deg, var(--surface3), var(--surface2)); border: 1px solid var(--border-md); border-radius: 12px; color: var(--green); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* ─── BLINDAGEM EMOCIONAL (impulso) ─── */
+.impulso-blindagem-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 10px; }
+.impulso-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.impulso-chip {
+  padding: 9px 14px; border-radius: 20px; border: 1px solid var(--border-md);
+  background: var(--surface2); color: var(--text2); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.impulso-chip.active { border-color: #C0782A; color: #C0782A; background: rgba(192,120,42,0.14); }
+.impulso-chip.active.ok { border-color: var(--green); color: var(--green); background: rgba(78,170,114,0.12); }
+.impulso-reflexao {
+  display: none; margin-top: 12px; padding: 12px 14px; font-size: 12.5px; line-height: 1.55;
+  color: var(--text2); background: rgba(192,98,72,0.08); border-left: 3px solid var(--red);
+  border-radius: 0 10px 10px 0; font-style: italic;
+}
+.impulso-reflexao.show { display: block; }
+.impulso-reflexao.ok { background: rgba(78,170,114,0.08); border-left-color: var(--green); }
 
 /* ─── DOMÍNIO PRÓPRIO INDICATOR ─── */
 .dominio-wrap {
@@ -1772,6 +1791,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div id="metaPrincipalBody"></div>
   </div>
 
+  <div class="card" id="meta10xCard" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🚀 Meta Audaciosa 10x</div>
+      <button class="btn btn-sm" id="meta10xResetBtn" onclick="resetarMeta10x()" style="display:none">Redefinir</button>
+    </div>
+    <div id="meta10xBody"></div>
+  </div>
+
   <div class="card" id="centavoCardDashboard" onclick="showSection('centavo', document.querySelector('.nav-tab[onclick*=&quot;centavo&quot;]'))" style="margin-bottom:16px;cursor:pointer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" style="margin:0">🪙 Desafio do Centavo</div>
@@ -1835,6 +1862,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="card" style="margin-bottom:16px">
       <div class="card-title">Projeção do Patrimônio — 10 anos (taxa 12% a.a.)</div>
       <div class="chart-wrap" id="dashProjectionChart"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">❄️ Bola de Neve — quando o dinheiro passa a trabalhar por você</div>
+      <div id="bolaDeNeveCard"></div>
     </div>
 
     <!-- ⚡ CONTAS URGENTES -->
@@ -2657,7 +2689,8 @@ let S = {
   ritual: { ultimo: '', texto: '', streak: 0 },
   contasUrgentes: [],
   diagnosticos: {},
-  centavo: { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }
+  centavo: { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false },
+  meta10x: { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' }
 };
 
 // Debounce: localStorage imediato, Supabase após 600ms de inatividade
@@ -2803,6 +2836,30 @@ setInterval(rotateQuote, 9000);
 // ══════════════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════════════
+// Som de moeda (sintetizado via Web Audio API — sem depender de arquivo
+// externo) tocado ao abrir a aba do Desafio do Centavo.
+function _tocarSomMoeda() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    [[988, 0], [1319, 0.08]].forEach(([freq, delay]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.15, now + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.18);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.2);
+    });
+    setTimeout(() => ctx.close(), 400);
+  } catch (e) { /* som é só um extra — falha silenciosa */ }
+}
+
 function showSection(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -2813,7 +2870,7 @@ function showSection(id, btn) {
   if (id === 'dividas')    renderDividas();
   if (id === 'juros')      calcJuros();
   if (id === 'metas')      renderMetas();
-  if (id === 'centavo')    renderCentavo();
+  if (id === 'centavo')    { renderCentavo(); _tocarSomMoeda(); }
   if (id === 'reserva')    { _initReservaForm(); renderReserva(); }
   if (id === 'virtudes')   renderVirtudes();
   if (id === 'primeirosprincipios') renderPrimeirosPrincipios();
@@ -2873,10 +2930,51 @@ const CAT_IMPULSO = 'Desnecessário (Impulsos)';
 // ── Impulso: interceptação e confirmação ─────────
 let _impulsoData = null;
 
+// ── Blindagem Emocional (inspirado em "Blindado", Tiago Brunet) ──
+// Antes de confirmar um gasto por impulso, pede pra nomear o motivo real
+// por trás da compra. Não bloqueia — só cria uma pausa consciente entre
+// o impulso e a ação, e guarda o motivo junto com a despesa.
+const MOTIVOS_IMPULSO = {
+  necessidade: { label: 'Necessidade real', ok: true,
+    texto: 'Se é necessidade de verdade, registre com consciência — isso não é o alvo da blindagem.' },
+  tedio: { label: 'Tédio ou ansiedade',
+    texto: 'Isso não é sobre o produto — é sobre o vazio. Respire 10 segundos antes de decidir. Compra não cura tédio, só adia o desconforto.' },
+  recompensa: { label: 'Recompensa emocional',
+    texto: 'Você merece se sentir bem — mas buscar isso no cartão é um alívio que cobra juros depois. Existe outra forma de se recompensar agora, sem gastar?' },
+  pressao: { label: 'Pressão social / FOMO',
+    texto: 'Ninguém vai lembrar dessa compra amanhã — só você, pagando ela depois. Decida pelo que é seu, não pelo que os outros veem.' },
+};
+let _impulsoMotivo = null;
+
+function selecionarMotivoImpulso(motivo, btn) {
+  _impulsoMotivo = motivo;
+  document.querySelectorAll('#impulsoChips .impulso-chip').forEach(c => c.classList.remove('active', 'ok'));
+  const info = MOTIVOS_IMPULSO[motivo];
+  btn.classList.add('active');
+  if (info.ok) btn.classList.add('ok');
+
+  const refl = document.getElementById('impulsoReflexao');
+  refl.textContent = info.texto;
+  refl.classList.add('show');
+  refl.classList.toggle('ok', !!info.ok);
+
+  document.getElementById('impulsoConfirmBtn').disabled = false;
+}
+
+function _resetBlindagemEmocional() {
+  _impulsoMotivo = null;
+  document.querySelectorAll('#impulsoChips .impulso-chip').forEach(c => c.classList.remove('active', 'ok'));
+  const refl = document.getElementById('impulsoReflexao');
+  refl.classList.remove('show', 'ok');
+  refl.textContent = '';
+  document.getElementById('impulsoConfirmBtn').disabled = true;
+}
+
 function _openImpulsoModal(data) {
   _impulsoData = data;
   document.getElementById('impulsoItemDesc').textContent = data.desc;
   document.getElementById('impulsoItemVal').textContent  = fmtD(data.valor);
+  _resetBlindagemEmocional();
   const m = document.getElementById('impulsoModal');
   m.classList.add('open');
 }
@@ -2890,8 +2988,8 @@ function closeImpulsoModal() {
 }
 
 function confirmarImpulso() {
-  if (!_impulsoData) return;
-  S.despesas.push(_impulsoData);
+  if (!_impulsoData || !_impulsoMotivo) return;
+  S.despesas.push({ ..._impulsoData, motivoEmocional: _impulsoMotivo });
   _impulsoData = null;
   closeImpulsoModal();
   // Limpa campos
@@ -3416,6 +3514,60 @@ function projCompound(P, PMT, rAnual, anos) {
   return data;
 }
 
+// ── Bola de Neve (Primo Rico) ────────────────────
+// Acha o mês em que o juro gerado pelo saldo já investido ultrapassa o
+// aporte mensal do próprio bolso — o ponto em que "o dinheiro passa a
+// trabalhar por você" em vez do contrário.
+function renderBolaDeNeve() {
+  const el = document.getElementById('bolaDeNeveCard');
+  if (!el || !appReady) return;
+  const aporte = Math.max(0, saldoMes());
+  const ativos = S.ativos || 0;
+
+  if (ativos <= 0 && aporte <= 0) {
+    el.innerHTML = `<div class="empty-state" style="padding:20px">Registre seus ativos e mantenha o saldo mensal positivo pra revelar quando o dinheiro passa a trabalhar por você.</div>`;
+    return;
+  }
+  if (aporte <= 0) {
+    el.innerHTML = `<div class="info-box">Seu saldo mensal está zerado ou negativo — antes da bola de neve rodar, o primeiro passo é fechar o mês no positivo. Ajuste as despesas na aba Orçamento.</div>`;
+    return;
+  }
+
+  const rm = 0.12 / 12; // mesma taxa da projeção de 10 anos acima
+  let bal = ativos, mes = null, jurosNoMes = 0;
+  for (let m = 0; m <= 600; m++) {
+    const juros = bal * rm;
+    if (juros >= aporte) { mes = m; jurosNoMes = juros; break; }
+    bal = bal * (1 + rm) + aporte;
+  }
+
+  if (mes === null) {
+    el.innerHTML = `<div class="info-box">No ritmo atual, ainda falta muito tempo pros juros ultrapassarem seu aporte mensal. Aumentar o valor investido por mês é o jeito mais rápido de acelerar esse ponto de virada.</div>`;
+    return;
+  }
+
+  const hoje = new Date();
+  const dataAlvo = new Date(hoje.getFullYear(), hoje.getMonth() + mes, 1);
+  const label = mes === 0
+    ? 'Seus ativos atuais já rendem, por mês, mais do que você guarda'
+    : `Em ${mes} ${mes === 1 ? 'mês' : 'meses'} (${MESES_PT[dataAlvo.getMonth()].slice(0,3)}/${dataAlvo.getFullYear()}), seus juros vão render mais que seu aporte mensal`;
+
+  el.innerHTML = `
+    <div style="text-align:center;padding:6px 0 4px">
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px">${label} — o dinheiro passa a trabalhar por você.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:var(--surface2);border-radius:10px;padding:12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Juros no mês</div>
+          <div style="font-size:17px;font-weight:800;color:var(--green)">${fmtD(jurosNoMes)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Seu aporte mensal</div>
+          <div style="font-size:17px;font-weight:800;color:var(--gold-bright)">${fmtD(aporte)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function calcJuros() {
   if (!appReady) return;
   const P    = parseFloat(document.getElementById('jCapital').value) || 0;
@@ -3833,9 +3985,11 @@ function renderDashboard() {
   const data10 = projCompound(S.ativos||0, aporte, 12, 10);
   renderMiniChart(data10, 'dashProjectionChart');
 
+  renderBolaDeNeve();
   renderPatrimonioEvolutionChart();
   renderContasUrgentes();
   renderMetaPrincipalWidget();
+  renderMeta10x();
   renderCentavoDashboardCard();
   _iniciarBurnRateTicker();
   toggleDashDetails(!!S.dashDetailsOpen);
@@ -3915,6 +4069,117 @@ function renderMetaPrincipalWidget() {
         ${pct>=100 ? '🛡️ Reserva completa!' : `Faltam <strong style="color:var(--text)">${fmt(Math.max(0,meta-acum))}</strong> para a reserva completa.`}
       </div>`;
   }
+}
+
+// ══════════════════════════════════════════════════
+// META AUDACIOSA 10x (inspirado em Elon Musk)
+// ══════════════════════════════════════════════════
+// Em vez de metas conservadoras, o usuário define um alvo agressivo de
+// patrimônio líquido com prazo curto e acompanha o ritmo semanal
+// necessário vs. o ritmo real — pressão positiva de execução acelerada.
+function iniciarMeta10x() {
+  const valor = parseFloat(document.getElementById('meta10xValorInput')?.value);
+  const prazo = parseInt(document.getElementById('meta10xPrazoInput')?.value) || 90;
+  if (isNaN(valor) || valor <= patriLiq()) {
+    _showToast('Defina um valor alvo maior que seu patrimônio líquido atual — a meta precisa ser audaciosa.');
+    return;
+  }
+  if (prazo < 7) { _showToast('Prazo mínimo de 7 dias.'); return; }
+  S.meta10x = {
+    ativo: true,
+    valorAlvo: valor,
+    valorInicial: patriLiq(),
+    dataInicio: todayISO(),
+    dataFim: _isoAddDias(todayISO(), prazo),
+  };
+  save();
+  renderMeta10x();
+  _showToast('🚀 Meta audaciosa lançada. Agora é executar.');
+}
+
+function resetarMeta10x() {
+  if (!confirm('Encerrar a meta audaciosa atual? Você pode definir uma nova em seguida.')) return;
+  S.meta10x = { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' };
+  save();
+  renderMeta10x();
+}
+
+function _diasEntre(isoA, isoB) {
+  const [ya, ma, da] = isoA.split('-').map(Number);
+  const [yb, mb, db] = isoB.split('-').map(Number);
+  return Math.round((new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da)) / 86400000);
+}
+
+function renderMeta10x() {
+  const el = document.getElementById('meta10xBody');
+  const resetBtn = document.getElementById('meta10xResetBtn');
+  if (!el || !appReady) return;
+  const m = S.meta10x;
+
+  if (!m || !m.ativo) {
+    if (resetBtn) resetBtn.style.display = 'none';
+    const sugestao = Math.max(1000, Math.round(Math.max(patriLiq(), 0) * 2 / 100) * 100 || 5000);
+    el.innerHTML = `
+      <div class="info-box" style="margin-bottom:14px;font-style:italic">"Se a meta não te dá um pouco de medo, ela é pequena demais." — inspirado em Elon Musk</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px">Patrimônio líquido alvo</label>
+          <input type="number" id="meta10xValorInput" placeholder="Ex: ${sugestao}" style="width:100%;height:44px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px">Prazo (dias)</label>
+          <input type="number" id="meta10xPrazoInput" value="90" style="width:100%;height:44px;box-sizing:border-box">
+        </div>
+        <button class="btn btn-primary" onclick="iniciarMeta10x()">Lançar meta audaciosa →</button>
+      </div>`;
+    return;
+  }
+
+  if (resetBtn) resetBtn.style.display = '';
+  const hoje          = todayISO();
+  const diasTotais    = Math.max(1, _diasEntre(m.dataInicio, m.dataFim));
+  const diasPassados  = Math.max(0, Math.min(diasTotais, _diasEntre(m.dataInicio, hoje)));
+  const diasRestantes = Math.max(0, diasTotais - diasPassados);
+  const atual         = patriLiq();
+  const progressoTotal = m.valorAlvo - m.valorInicial;
+  const progressoFeito = atual - m.valorInicial;
+  const pct = progressoTotal !== 0 ? Math.min(100, Math.max(0, (progressoFeito / progressoTotal) * 100)) : 0;
+
+  const ritmoNecessario = (progressoTotal / diasTotais) * 7;
+  const ritmoAtual      = diasPassados > 0 ? (progressoFeito / diasPassados) * 7 : 0;
+  const noRitmo       = ritmoAtual >= ritmoNecessario * 0.9;
+  const concluida     = atual >= m.valorAlvo;
+  const prazoEsgotado = diasRestantes <= 0 && !concluida;
+
+  let statusHtml;
+  if (concluida) {
+    statusHtml = `<span class="kpi-badge ok">🏆 Meta batida!</span>`;
+  } else if (prazoEsgotado) {
+    statusHtml = `<span class="kpi-badge bad">⏱️ Prazo encerrado — redefina a meta</span>`;
+  } else {
+    statusHtml = noRitmo
+      ? `<span class="kpi-badge ok">🔥 No ritmo</span>`
+      : `<span class="kpi-badge bad">⚠️ Abaixo do ritmo — acelere</span>`;
+  }
+
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:10px">
+      <div style="font-size:26px;font-weight:800;color:var(--gold-bright)">${fmtP(pct)}</div>
+      <div style="font-size:12px;color:var(--text3)">${fmt(atual)} de ${fmt(m.valorAlvo)} — patrimônio líquido</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:var(--gold-bright)"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Ritmo necessário</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text)">${fmtD(ritmoNecessario)}/sem</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Seu ritmo atual</div>
+        <div style="font-size:15px;font-weight:800;color:${noRitmo ? 'var(--green)' : 'var(--red)'}">${fmtD(ritmoAtual)}/sem</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:14px">${statusHtml}</div>
+    <div style="text-align:center;margin-top:8px;font-size:11.5px;color:var(--text3)">${diasRestantes > 0 ? `Faltam <strong style="color:var(--text)">${diasRestantes} dias</strong>` : 'Prazo encerrado'}</div>`;
 }
 
 function renderMiniChart(data, elId) {
@@ -4507,6 +4772,7 @@ function importBackup(event) {
       S.ritual        = S.ritual       || { ultimo:'', texto:'', streak:0 };
       S.pagas         = S.pagas        || [];
       S.centavo       = Object.assign({ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false }, S.centavo || {});
+      S.meta10x       = S.meta10x      || { ativo:false, valorAlvo:0, valorInicial:0, dataInicio:'', dataFim:'' };
       save();
       renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
       _showToast('✅ Backup restaurado com sucesso!');
@@ -4568,6 +4834,7 @@ function _confirmarLimpeza() {
     reserva:{ acumulado:0, metaCustom:0, prazo:12 },
     orcamentoCats:{}, marcos:[], checkIn:{ ultimo:'', streak:0 }, ritual:{ ultimo:'', texto:'', streak:0 },
     centavo:{ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false },
+    meta10x:{ ativo:false, valorAlvo:0, valorInicial:0, dataInicio:'', dataFim:'' },
   });
   save();
   renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
@@ -4588,6 +4855,7 @@ async function _bootApp() {
   // (ex.: contas criadas antes de valoresManuais/modoManual/concluido existirem)
   // sem descartar diaAtual/datasMarcadas já salvos.
   S.centavo      = Object.assign({ diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }, S.centavo || {});
+  S.meta10x      = S.meta10x      || { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' };
   appReady = true;
   const el = document.getElementById('metaAtivos');
   if (el) el.value = S.ativos || 0;
@@ -6171,9 +6439,19 @@ async function pwaInstall() {
       <span class="impulso-item-desc" id="impulsoItemDesc">—</span>
       <span class="impulso-item-val"  id="impulsoItemVal">—</span>
     </div>
-    <div class="impulso-actions">
+
+    <div class="impulso-blindagem-label">🛡️ Blindagem emocional — o que está por trás dessa compra?</div>
+    <div class="impulso-chips" id="impulsoChips">
+      <button type="button" class="impulso-chip" onclick="selecionarMotivoImpulso('necessidade', this)">Necessidade real</button>
+      <button type="button" class="impulso-chip" onclick="selecionarMotivoImpulso('tedio', this)">Tédio ou ansiedade</button>
+      <button type="button" class="impulso-chip" onclick="selecionarMotivoImpulso('recompensa', this)">Recompensa emocional</button>
+      <button type="button" class="impulso-chip" onclick="selecionarMotivoImpulso('pressao', this)">Pressão social / FOMO</button>
+    </div>
+    <div class="impulso-reflexao" id="impulsoReflexao"></div>
+
+    <div class="impulso-actions" style="margin-top:18px">
       <button class="impulso-btn-no"  onclick="closeImpulsoModal()">← Reconsiderar</button>
-      <button class="impulso-btn-ok"  onclick="confirmarImpulso()">Registrar mesmo assim</button>
+      <button class="impulso-btn-ok"  id="impulsoConfirmBtn" onclick="confirmarImpulso()" disabled>Registrar mesmo assim</button>
     </div>
   </div>
 </div>

@@ -5,8 +5,8 @@
       <stop offset="55%" stop-color="#201506"/>
       <stop offset="100%" stop-color="#100A03"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="28%" r="60%">
-      <stop offset="0%" stop-color="#C99A3E" stop-opacity="0.55"/>
+    <radialGradient id="glow" cx="50%" cy="26%" r="62%">
+      <stop offset="0%" stop-color="#C99A3E" stop-opacity="0.5"/>
       <stop offset="100%" stop-color="#C99A3E" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -18,20 +18,14 @@
   <rect width="512" height="512" rx="114" fill="url(#bgGrad)"/>
   <rect width="512" height="512" rx="114" fill="url(#glow)"/>
 
-  <!-- Soft ground shadow -->
-  <ellipse cx="256" cy="420" rx="118" ry="14" fill="#000000" opacity="0.35"/>
+  <!-- Ampulheta (silhueta em bronze, simboliza o tempo) -->
+  <g stroke="#8A6A2E" stroke-width="15" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <path d="M150 130 L362 130 L256 256 L362 382 L150 382 L256 256 Z"/>
+  </g>
+  <rect x="140" y="118" width="232" height="20" rx="10" fill="#8A6A2E"/>
+  <rect x="140" y="374" width="232" height="20" rx="10" fill="#8A6A2E"/>
 
-  <!-- Scale beam -->
-  <rect x="176" y="178" width="160" height="20" rx="10" fill="url(#goldGrad)"/>
-  <!-- Pivot pole -->
-  <rect x="244" y="186" width="24" height="200" rx="12" fill="url(#goldGrad)"/>
-  <!-- Chains -->
-  <line x1="186" y1="196" x2="146" y2="304" stroke="url(#goldGrad)" stroke-width="11" stroke-linecap="round"/>
-  <line x1="326" y1="196" x2="366" y2="304" stroke="url(#goldGrad)" stroke-width="11" stroke-linecap="round"/>
-  <!-- Pans -->
-  <circle cx="146" cy="320" r="36" fill="url(#goldGrad)"/>
-  <circle cx="366" cy="320" r="36" fill="url(#goldGrad)"/>
-  <!-- Base -->
-  <rect x="194" y="384" width="124" height="20" rx="10" fill="url(#goldGrad)"/>
-  <rect x="162" y="404" width="188" height="18" rx="9" fill="#A07830"/>
+  <!-- Cifrão dourado (o dinheiro no centro do tempo) -->
+  <text x="256" y="338" font-size="250" font-weight="900" text-anchor="middle"
+        fill="url(#goldGrad)" font-family="Georgia, 'Times New Roman', serif">$</text>
 </svg>

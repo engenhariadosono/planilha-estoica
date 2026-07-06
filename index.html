@@ -424,6 +424,30 @@ select option { background: var(--surface2); }
   0%, 100% { box-shadow: 0 0 0 0 rgba(168,161,151,0.4); }
   50%      { box-shadow: 0 0 0 6px rgba(168,161,151,0); }
 }
+/* ── COFRE ESTOICO ── */
+.cofre-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.cofre-chip {
+  flex: 1 1 auto; min-width: 58px; padding: 10px 8px; border-radius: var(--radius-sm);
+  background: var(--surface2); border: 1px solid var(--border-md); color: var(--text2);
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.cofre-chip:hover  { border-color: var(--gold); color: var(--gold-bright); }
+.cofre-chip:active { transform: translateY(1px); }
+.cofre-proj-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px;
+}
+.cofre-proj-card {
+  background: linear-gradient(155deg, var(--kpi-bg1), var(--kpi-bg2));
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px 12px; text-align: center;
+}
+.cofre-proj-ano { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); margin-bottom: 6px; }
+.cofre-proj-val { font-size: 19px; font-weight: 900; color: var(--gold-bright); letter-spacing: -0.5px; }
+.cofre-proj-sub { font-size: 10.5px; color: var(--green); margin-top: 4px; }
+.cofre-stat { text-align: center; }
+.cofre-stat b { display: block; font-size: 20px; font-weight: 900; line-height: 1.1; }
+.cofre-stat span { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
 .centavo-coin-overlay {
   position: fixed; inset: 0; z-index: 9998;
   display: flex; align-items: center; justify-content: center;
@@ -1786,6 +1810,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
       <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
+      <button class="nav-tab" onclick="showSection('cofre',this)"><span class="nt-icon">🏦</span>Cofre</button>
       <button class="nav-tab" onclick="showSection('virtudes',this)"><span class="nt-icon">⚡</span>Virtudes</button>
       <button class="nav-tab" onclick="showSection('primeirosprincipios',this)"><span class="nt-icon">🚀</span>Primeiros Princípios</button>
       <button class="nav-tab" onclick="showSection('futuro',this)"><span class="nt-icon">🏛️</span>Futuro</button>
@@ -1883,6 +1908,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <div style="font-size:11px;color:var(--text3)">valor de hoje</div>
     </div>
     <div class="progress-wrap"><div class="progress-bar" id="centavoCardProgressBar" style="width:0%;background:var(--gold-bright)"></div></div>
+  </div>
+
+  <div class="card" id="cofreCardDashboard" onclick="showSection('cofre', document.querySelector('.nav-tab[onclick*=&quot;cofre&quot;]'))" style="margin-bottom:16px;cursor:pointer">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🏦 Cofre Estoico</div>
+      <div id="cofreCardStreak" style="font-size:11px;color:var(--green);font-weight:700">—</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <div id="cofreCardTotal" style="font-size:24px;font-weight:900;color:var(--gold-bright);letter-spacing:-1px">R$ 0,00</div>
+      <div id="cofreCardStatus" style="font-size:11px;color:var(--text3)">guarde hoje</div>
+    </div>
   </div>
 
   <div class="card" id="burnRateCard" style="margin-bottom:16px">
@@ -2340,6 +2376,89 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </div>
 
 <!-- ══════════════════════════════════════════
+     COFRE ESTOICO — hábito diário de poupança composta
+══════════════════════════════════════════ -->
+<section class="section" id="s-cofre">
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">🏦 Cofre Estoico</h1>
+      <p class="section-sub">Um pouco todo dia. O hábito que os juros transformam em liberdade.</p>
+    </div>
+  </div>
+
+  <!-- HERO: total acumulado + sequência -->
+  <div class="card" style="text-align:center;margin-bottom:16px">
+    <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px">No seu cofre</div>
+    <div id="cofreTotal" style="font-size:42px;font-weight:900;letter-spacing:-1.5px;color:var(--gold-bright);text-shadow:0 0 24px rgba(168,161,151,0.35)">R$ 0,00</div>
+    <div style="display:flex;justify-content:center;gap:28px;margin-top:18px;flex-wrap:wrap">
+      <div class="cofre-stat"><b style="color:var(--green)">🔥 <span id="cofreStreak">0</span></b><span>sequência</span></div>
+      <div class="cofre-stat"><b style="color:var(--gold)"><span id="cofreMelhor">0</span></b><span>melhor</span></div>
+      <div class="cofre-stat"><b style="color:var(--text)"><span id="cofreDias">0</span></b><span>dias guardados</span></div>
+    </div>
+  </div>
+
+  <!-- AÇÃO DE HOJE -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:14px">Ação de hoje</div>
+    <div id="cofreAcaoWrap">
+      <div class="cofre-chips" role="group" aria-label="Valores rápidos">
+        <button class="cofre-chip" type="button" onclick="cofreQuick(2)">R$ 2</button>
+        <button class="cofre-chip" type="button" onclick="cofreQuick(5)">R$ 5</button>
+        <button class="cofre-chip" type="button" onclick="cofreQuick(10)">R$ 10</button>
+        <button class="cofre-chip" type="button" onclick="cofreQuick(20)">R$ 20</button>
+        <button class="cofre-chip" type="button" onclick="cofreQuick(50)">R$ 50</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input type="number" id="cofreValorInput" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00"
+               aria-label="Valor a guardar hoje" onkeydown="if(event.key==='Enter')guardarCofre()"
+               style="flex:1;height:48px;font-size:16px">
+        <button class="btn btn-primary" onclick="guardarCofre()" aria-label="Guardar valor de hoje no cofre"
+                style="white-space:nowrap;padding:0 22px;font-weight:800">Guardar hoje ✓</button>
+      </div>
+    </div>
+    <div id="cofreFeitoWrap" style="display:none;text-align:center;padding:6px 0">
+      <div style="font-size:15px;font-weight:800;color:var(--green)">✓ Você guardou <span id="cofreFeitoValor">R$ 0,00</span> hoje</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">Volte amanhã para manter a sequência viva.</div>
+      <button class="btn btn-sm" onclick="desfazerCofreHoje()" style="margin-top:12px;background:none;border:1px solid var(--border-md);color:var(--text3)">Desfazer / ajustar</button>
+    </div>
+  </div>
+
+  <!-- CORRENTE: últimos 30 dias -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">Últimos 30 dias</div>
+    <div class="centavo-grid" id="cofreGrid" style="margin-top:12px"></div>
+  </div>
+
+  <!-- PROJEÇÃO COMPOSTA -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div class="card-title" style="margin:0">Se você mantiver esse hábito</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)">Taxa a.a.
+        <input type="number" id="cofreTaxaInput" min="0" step="0.5" onchange="cofreSetTaxa()"
+               aria-label="Taxa de juros anual usada na projeção" style="width:64px;height:34px;font-size:13px">%
+      </label>
+    </div>
+    <div class="cofre-proj-grid" id="cofreProjCards"></div>
+    <div class="chart-wrap" id="cofreProjChart" style="margin-top:14px"></div>
+    <div id="cofreReforco" style="margin-top:12px;font-size:12px;color:var(--gold-bright);text-align:center;font-style:italic;line-height:1.5"></div>
+  </div>
+
+  <!-- META DIÁRIA -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:12px">Sua meta diária</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" id="cofreMetaInput" min="0.01" step="0.01" onchange="cofreSetMeta()"
+             aria-label="Meta diária de poupança" style="flex:1;height:44px;font-size:15px">
+      <span style="font-size:12px;color:var(--text3);white-space:nowrap">por dia</span>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-top:16px">
+    <strong>Por que funciona:</strong> guardar um valor pequeno e constante importa mais do que guardar muito de vez em quando. O dinheiro que entra cedo rende por mais tempo — e os juros dos juros fazem o resto. Aqui, perder um dia quebra a <em>sequência</em>, nunca o que você já acumulou. Volte e recomece: o cofre continua de pé.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
      RESERVA DE EMERGÊNCIA
 ══════════════════════════════════════════ -->
 <section class="section" id="s-reserva">
@@ -2571,6 +2690,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button onclick="showSection('juros',this);syncBottomNav(this)"><span class="bn-icon">📈</span>Juros</button>
   <button onclick="showSection('metas',this);syncBottomNav(this)"><span class="bn-icon">🎯</span>Metas</button>
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
+  <button onclick="showSection('cofre',this);syncBottomNav(this)"><span class="bn-icon">🏦</span>Cofre</button>
   <button onclick="showSection('virtudes',this);syncBottomNav(this)"><span class="bn-icon">⚡</span>Virtudes</button>
   <button onclick="showSection('primeirosprincipios',this);syncBottomNav(this)"><span class="bn-icon">🚀</span>Princípios</button>
   <button onclick="showSection('futuro',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Futuro</button>
@@ -2832,7 +2952,8 @@ let S = {
   contasUrgentes: [],
   diagnosticos: {},
   centavo: { diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false },
-  meta10x: { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' }
+  meta10x: { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' },
+  cofre: { metaDiaria: 5, taxaAnual: 10, registros: [], ultimo: '', melhorStreak: 0 }
 };
 
 // Debounce: localStorage imediato, Supabase após 600ms de inatividade
@@ -3226,6 +3347,7 @@ function showSection(id, btn) {
   if (id === 'metas')      renderMetas();
   if (id === 'centavo')    { renderCentavo(); _tocarSomMoeda(); }
   if (id === 'reserva')    { _initReservaForm(); renderReserva(); }
+  if (id === 'cofre')      renderCofre();
   if (id === 'virtudes')   renderVirtudes();
   if (id === 'primeirosprincipios') renderPrimeirosPrincipios();
   if (id === 'futuro')     renderFuturo();
@@ -4345,6 +4467,7 @@ function renderDashboard() {
   renderMetaPrincipalWidget();
   renderMeta10x();
   renderCentavoDashboardCard();
+  renderCofreDashboardCard();
   _iniciarBurnRateTicker();
   toggleDashDetails(!!S.dashDetailsOpen);
 }
@@ -5216,6 +5339,7 @@ function importBackup(event) {
       S.pagas         = S.pagas        || [];
       S.centavo       = Object.assign({ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false }, S.centavo || {});
       S.meta10x       = S.meta10x      || { ativo:false, valorAlvo:0, valorInicial:0, dataInicio:'', dataFim:'' };
+      S.cofre         = Object.assign({ metaDiaria:5, taxaAnual:10, registros:[], ultimo:'', melhorStreak:0 }, S.cofre || {});
       save();
       renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
       _showToast('✅ Backup restaurado com sucesso!');
@@ -5296,6 +5420,7 @@ function _ensureDefaults() {
   // sem descartar diaAtual/datasMarcadas já salvos.
   S.centavo      = Object.assign({ diaAtual: 0, datasMarcadas: [], ultimoMarco: 0, valoresManuais: {}, modoManual: false, concluido: false }, S.centavo || {});
   S.meta10x      = S.meta10x      || { ativo: false, valorAlvo: 0, valorInicial: 0, dataInicio: '', dataFim: '' };
+  S.cofre        = Object.assign({ metaDiaria: 5, taxaAnual: 10, registros: [], ultimo: '', melhorStreak: 0 }, S.cofre || {});
 }
 
 async function _bootApp() {
@@ -6129,6 +6254,157 @@ function _initReservaForm() {
   if (acEl) acEl.value = r.acumulado || '';
   if (mcEl) mcEl.value = r.metaCustom || '';
   if (prEl) prEl.value = r.prazo || 12;
+}
+
+// ══════════════════════════════════════════════════
+// COFRE ESTOICO — hábito diário de poupança composta
+// ──────────────────────────────────────────────────
+// Micro-resultado HOJE (guardar um pouco, ver a corrente e o saldo subir) que
+// compõe no médio/longo prazo (projeção com juros compostos). Diferente do
+// Desafio do Centavo (fixo e punitivo), aqui o patrimônio acumulado nunca é
+// destruído: perder um dia quebra a *sequência*, jamais o dinheiro já guardado.
+// ══════════════════════════════════════════════════
+const COFRE_DIAS_ANO = 365.2425;
+
+function _cofre() {
+  if (!S.cofre) S.cofre = { metaDiaria: 5, taxaAnual: 10, registros: [], ultimo: '', melhorStreak: 0 };
+  if (!Array.isArray(S.cofre.registros)) S.cofre.registros = [];
+  return S.cofre;
+}
+function cofreTotal()       { return _cofre().registros.reduce((a, r) => a + (r.valor || 0), 0); }
+function cofreRegistroDe(iso) { return _cofre().registros.find(r => r.data === iso); }
+function cofreJaHoje()      { return !!cofreRegistroDe(todayISO()); }
+
+// Dias consecutivos terminando hoje (ou ontem, se hoje ainda não foi marcado)
+function cofreStreak() {
+  const datas = new Set(_cofre().registros.map(r => r.data));
+  if (!datas.size) return 0;
+  const d = new Date();
+  if (!datas.has(todayISO())) d.setDate(d.getDate() - 1);
+  let streak = 0;
+  while (true) {
+    const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (datas.has(iso)) { streak++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return streak;
+}
+
+function cofreQuick(v) {
+  const el = document.getElementById('cofreValorInput');
+  if (el) { el.value = v; el.focus(); }
+}
+
+function guardarCofre(valorArg) {
+  const c = _cofre();
+  const inputEl = document.getElementById('cofreValorInput');
+  let valor = (valorArg != null) ? valorArg : parseFloat(inputEl && inputEl.value);
+  if (isNaN(valor) || valor <= 0) { if (inputEl) inputEl.focus(); return; }
+  valor = Math.round(valor * 100) / 100;
+  const hoje = todayISO();
+  const existente = cofreRegistroDe(hoje);
+  if (existente) existente.valor = valor;          // ajusta o registro de hoje
+  else c.registros.push({ data: hoje, valor });     // ou cria o de hoje
+  c.ultimo = hoje;
+  c.melhorStreak = Math.max(c.melhorStreak || 0, cofreStreak());
+  save();
+  renderCofre();
+  renderCofreDashboardCard();
+  _showToast(`🏦 +${fmtD(valor)} guardado · sequência de ${cofreStreak()} dia${cofreStreak()>1?'s':''}`);
+}
+
+function desfazerCofreHoje() {
+  const c = _cofre();
+  c.registros = c.registros.filter(r => r.data !== todayISO());
+  save(); renderCofre(); renderCofreDashboardCard();
+}
+
+function cofreSetMeta() {
+  const v = parseFloat(document.getElementById('cofreMetaInput').value);
+  if (!isNaN(v) && v > 0) { _cofre().metaDiaria = Math.round(v * 100) / 100; save(); renderCofre(); }
+}
+function cofreSetTaxa() {
+  const v = parseFloat(document.getElementById('cofreTaxaInput').value);
+  if (!isNaN(v) && v >= 0) { _cofre().taxaAnual = v; save(); renderCofre(); }
+}
+
+function renderCofreDashboardCard() {
+  if (!appReady) return;
+  const card = document.getElementById('cofreCardDashboard');
+  if (!card) return;
+  const c = _cofre();
+  const jaHoje = cofreJaHoje();
+  const streak = cofreStreak();
+  document.getElementById('cofreCardTotal').textContent  = fmtD(cofreTotal());
+  document.getElementById('cofreCardStreak').textContent = streak > 0 ? `🔥 ${streak} dia${streak>1?'s':''}` : '—';
+  const st = document.getElementById('cofreCardStatus');
+  st.textContent  = jaHoje ? '✓ guardado hoje' : `guarde ${fmtD(c.metaDiaria)} hoje`;
+  st.style.color  = jaHoje ? 'var(--green)' : 'var(--text3)';
+}
+
+function renderCofre() {
+  if (!appReady) return;
+  const c = _cofre();
+  const meta = c.metaDiaria || 5;
+  const taxa = (c.taxaAnual != null) ? c.taxaAnual : 10;
+  const jaHoje = cofreJaHoje();
+  const streak = cofreStreak();
+
+  // Hero
+  document.getElementById('cofreTotal').textContent  = fmtD(cofreTotal());
+  document.getElementById('cofreStreak').textContent = streak;
+  document.getElementById('cofreMelhor').textContent = Math.max(c.melhorStreak || 0, streak);
+  document.getElementById('cofreDias').textContent   = c.registros.length;
+
+  // Ação de hoje / estado concluído
+  const acao  = document.getElementById('cofreAcaoWrap');
+  const feito = document.getElementById('cofreFeitoWrap');
+  if (jaHoje) {
+    acao.style.display = 'none';
+    feito.style.display = '';
+    document.getElementById('cofreFeitoValor').textContent = fmtD(cofreRegistroDe(todayISO()).valor);
+  } else {
+    acao.style.display = '';
+    feito.style.display = 'none';
+    const inp = document.getElementById('cofreValorInput');
+    if (inp && !inp.value) inp.value = meta;
+  }
+  const metaInp = document.getElementById('cofreMetaInput');
+  if (metaInp && document.activeElement !== metaInp) metaInp.value = meta;
+  const taxaInp = document.getElementById('cofreTaxaInput');
+  if (taxaInp && document.activeElement !== taxaInp) taxaInp.value = taxa;
+
+  // Grade dos últimos 30 dias
+  const datas = new Set(c.registros.map(r => r.data));
+  const base = new Date();
+  let gridHtml = '';
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(base); d.setDate(d.getDate() - i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const feitoDia = datas.has(iso);
+    const ehHoje = iso === todayISO();
+    const cls = feitoDia ? 'feito' : (ehHoje ? 'hoje' : '');
+    const title = feitoDia ? `${fmtDateShort(iso)} — ${fmtD(cofreRegistroDe(iso).valor)}` : `${fmtDateShort(iso)} — vazio`;
+    gridHtml += `<div class="centavo-day ${cls}" title="${title}">${feitoDia ? '🪙' : d.getDate()}</div>`;
+  }
+  document.getElementById('cofreGrid').innerHTML = gridHtml;
+
+  // Projeção composta — assume manutenção da meta diária daqui em diante
+  const pmtMensal = meta * (COFRE_DIAS_ANO / 12);
+  const proj = projCompound(cofreTotal(), pmtMensal, taxa, 20);
+  const marco = a => proj.find(p => p.ano === a) || proj[proj.length - 1];
+  document.getElementById('cofreProjCards').innerHTML = [1, 5, 10, 20].map(a => {
+    const m = marco(a);
+    const pctJuros = m.balance > 0 ? (m.juros / m.balance * 100) : 0;
+    return `<div class="cofre-proj-card">
+      <div class="cofre-proj-ano">${a} ano${a > 1 ? 's' : ''}</div>
+      <div class="cofre-proj-val">${fmt(m.balance)}</div>
+      <div class="cofre-proj-sub">${fmt(m.juros)} de juros · ${pctJuros.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+  renderMiniChart(proj, 'cofreProjChart');
+
+  document.getElementById('cofreReforco').textContent =
+    `${fmtD(meta)} por dia = ${fmt(meta * COFRE_DIAS_ANO)} por ano guardado. A consistência, não o valor, constrói a liberdade.`;
 }
 
 function renderReserva() {

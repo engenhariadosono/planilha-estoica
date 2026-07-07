@@ -1,6 +1,6 @@
-const CACHE = 'pe-v8';
+const CACHE = 'pe-v9';
 const CDN   = 'pe-cdn-v6';
-const CORE  = ['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png'];
+const CORE  = ['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-192-maskable.png', '/icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));

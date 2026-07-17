@@ -3774,7 +3774,11 @@ const totalDesp = () => S.despesas.reduce((s, d) => s + d.valor, 0);
 const totalDiv  = () => S.dividas.reduce((s, d) => s + d.saldo, 0);
 const saldoMes  = () => totalRec() - totalDesp();
 const taxaPoupa = () => { const r = totalRec(); return r > 0 ? (saldoMes() / r) * 100 : 0; };
-const patriLiq  = () => (S.ativos || 0) - totalDiv();
+// Saldo devedor dos empréstimos = valor presente das parcelas restantes.
+const totalEmp  = () => (S.emprestimos || []).reduce((s, e) => s + _empSaldo(e), 0);
+// Empréstimo é passivo tanto quanto dívida de rotativo: sem descontá-lo o
+// patrimônio ficava superestimado em todo o saldo dos contratos.
+const patriLiq  = () => (S.ativos || 0) - totalDiv() - totalEmp();
 
 // ══════════════════════════════════════════════════
 // ORÇAMENTO
@@ -5061,7 +5065,7 @@ function renderDashboard() {
   // O badge mostra o compromisso mensal, que é o que aperta o fluxo de caixa.
   const emps      = S.emprestimos || [];
   const empAtivos = emps.filter(e => (e.pagas || 0) < (e.parcelas || 0));
-  const empSaldo  = emps.reduce((s, e) => s + _empSaldo(e), 0);
+  const empSaldo  = totalEmp();
   const empMensal = empAtivos.reduce((s, e) => s + e.parcela, 0);
   const badgeEmp  = !emps.length      ? `<span class="kpi-badge ok">✓ Sem empréstimos</span>`
                   : !empAtivos.length ? `<span class="kpi-badge ok">✓ Todos quitados</span>`
@@ -5432,7 +5436,7 @@ function renderMetas() {
     <div style="text-align:center;margin-bottom:14px">
       <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">Patrimônio Líquido</div>
       <div style="font-size:28px;font-weight:900;color:${patLiq>=0?'var(--gold)':'var(--red)'};letter-spacing:-1px">${fmt(patLiq)}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">= Ativos − Dívidas</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">= Ativos − Dívidas − Empréstimos</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px">
       <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2)">
@@ -5442,6 +5446,10 @@ function renderMetas() {
       <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2)">
         <span>Total de Dívidas</span>
         <span style="font-weight:700;color:var(--red)">${fmt(totalDiv())}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2)">
+        <span>Total de Empréstimos</span>
+        <span style="font-weight:700;color:var(--red)">${fmt(totalEmp())}</span>
       </div>
     </div>
     <div class="sync-note">${despValida ? `${catLabel} no Orçamento · <strong>${despLabel}</strong>/mês` : 'Adicione despesas no Orçamento para métricas completas'}</div>`;

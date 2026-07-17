@@ -1996,13 +1996,27 @@ input:focus, select:focus {
 </head>
 <body>
 
-<!-- Glifo da marca (cifrão dentro de ampulheta) — reutilizável via <use href="#brandGlyph"> -->
+<!-- Glifo da marca (cifrão geométrico monoline) — reutilizável via <use href="#brandGlyph">.
+     Mesmo desenho do icon.svg, sem o anel: a 22px na barra o anel viraria sujeira.
+     Traço mais encorpado que o do ícone porque aqui renderiza bem menor. -->
 <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+  <defs>
+    <!-- userSpaceOnUse é obrigatório: a haste é uma linha vertical, de bounding box
+         com largura ZERO. Com objectBoundingBox (o padrão) o gradiente degenera e o
+         navegador não pinta a haste — o glifo vira um "S". -->
+    <linearGradient id="brandGrad" gradientUnits="userSpaceOnUse" x1="50" y1="14" x2="50" y2="86">
+      <stop offset="0%"   stop-color="#E4DED2"/>
+      <stop offset="55%"  stop-color="#A8A197"/>
+      <stop offset="100%" stop-color="#6E6860"/>
+    </linearGradient>
+  </defs>
   <symbol id="brandGlyph" viewBox="0 0 100 100">
-    <rect x="24" y="19" width="52" height="6.5" rx="3.2" fill="#8A6A2E"/>
-    <rect x="24" y="74.5" width="52" height="6.5" rx="3.2" fill="#8A6A2E"/>
-    <path d="M29 26 L71 26 L50 50 L71 74 L29 74 L50 50 Z" fill="none" stroke="#8A6A2E" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-    <text x="50" y="66" font-size="54" font-weight="900" text-anchor="middle" fill="#E8B84B" font-family="Georgia,'Times New Roman',serif">$</text>
+    <g stroke="url(#brandGrad)" stroke-width="6.1" stroke-linecap="round" fill="none">
+      <path d="M66.1 34.6 C66.1 26.9 59 22.4 50 22.4 C41 22.4 33.9 26.9 33.9 34.6
+               C33.9 42.3 41 46.1 50 48.7 C59 51.3 66.1 55.1 66.1 64.1
+               C66.1 73.1 59 77.6 50 77.6 C41 77.6 33.9 73.1 33.9 65.4"/>
+      <path d="M50 14 L50 86"/>
+    </g>
   </symbol>
 </svg>
 
@@ -2544,7 +2558,7 @@ input:focus, select:focus {
       <div class="form-group" style="max-width:130px"><label>Nº de parcelas</label><input type="number" id="empParcelas" placeholder="24" min="1" step="1" oninput="_empPreview()"></div>
       <div class="form-group" style="max-width:155px"><label>Valor da parcela</label><input type="number" id="empParcela" placeholder="0,00" min="0" oninput="_empPreview()"></div>
       <div class="form-group" style="max-width:130px"><label>Já pagas</label><input type="number" id="empPagas" placeholder="0" min="0" step="1"></div>
-      <div class="form-group" style="max-width:148px"><label>1º vencimento</label><input type="date" id="empData"></div>
+      <div class="form-group" style="max-width:148px"><label>Vencimento</label><input type="date" id="empData"></div>
       <div class="form-group" style="max-width:110px"><label>&nbsp;</label><button class="btn btn-primary" onclick="addEmprestimo()">Registrar</button></div>
     </div>
     <div class="emp-preview" id="empPreview"></div>
@@ -4167,12 +4181,33 @@ function _empProgresso(e) {
   };
 }
 
+// Dia do mês em que a parcela vence (1..31), tirado da data informada.
+// CUIDADO DE FUSO: nunca new Date('YYYY-MM-DD') — seria interpretado como UTC e
+// voltaria um dia no Brasil. Lê os componentes da string direto.
+function _empDiaVenc(e) {
+  const d = e.data ? parseInt(e.data.slice(8, 10), 10) : NaN;
+  return (d >= 1 && d <= 31) ? d : new Date().getDate();
+}
+
+// Próximo vencimento a partir de hoje, respeitando o dia contratado.
+function _empProxVenc(e) {
+  const hoje = new Date();
+  const dia  = _empDiaVenc(e);
+  let ano = hoje.getFullYear(), mes = hoje.getMonth();
+  if (hoje.getDate() > dia) mes++;             // o deste mês já passou
+  return { ano, mes, dia };
+}
+
 function _empDataQuitacao(e) {
   const rest = Math.max(0, (e.parcelas || 0) - (e.pagas || 0));
   if (!rest) return 'Quitado';
-  const dt = new Date();
-  dt.setMonth(dt.getMonth() + rest);
-  return fmtDate(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-01`);
+  const { ano, mes, dia } = _empProxVenc(e);
+  // A última parcela cai (rest-1) meses depois do próximo vencimento.
+  const alvo = new Date(ano, mes + (rest - 1), 1);
+  // Dia 31 num mês de 30 (ou fevereiro) recua para o último dia existente.
+  const ultimo = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+  const diaF   = Math.min(dia, ultimo);
+  return fmtDate(`${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-${String(diaF).padStart(2, '0')}`);
 }
 
 function addEmprestimo() {
@@ -4273,6 +4308,10 @@ function renderEmprestimos() {
         <div class="debt-info-item">
           <span class="debt-info-label">Saldo Devedor</span>
           <span class="debt-info-value" style="color:var(--text)">${fmt(p.saldo)}</span>
+        </div>
+        <div class="debt-info-item">
+          <span class="debt-info-label">Vencimento</span>
+          <span class="debt-info-value" style="color:var(--text)">${p.quitado ? '—' : `dia ${_empDiaVenc(e)}`}</span>
         </div>
         <div class="debt-info-item">
           <span class="debt-info-label">Quitação</span>

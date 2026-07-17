@@ -140,14 +140,38 @@ body {
   border-radius: 100px;
   backdrop-filter: blur(12px);
   box-shadow: 0 10px 34px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset;
+  /* As abas somam ~1580px. Sem rolagem, o flex espremia os botões (que têm
+     nowrap) e o texto vazava em qualquer tela menor que isso. Agora cada aba
+     mantém o tamanho e a régua rola na horizontal. */
+  max-width: 100%;
+  /* min-width:0 é obrigatório: como flex item, .nav-tabs herda min-width:auto e
+     se recusa a ficar menor que o conteúdo (1583px) — o overflow-x abaixo nunca
+     chegaria a rolar. */
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.nav-tabs::-webkit-scrollbar { display: none; }
 .nav-tab {
   background: none; border: none; color: var(--text3);
   font-size: 12.5px; font-weight: 600; padding: 8px 14px;
   border-radius: 100px; cursor: pointer; white-space: nowrap;
   display: flex; align-items: center; gap: 6px;
+  flex: 0 0 auto;                 /* tamanho fixo: rola em vez de encolher */
   transition: background 0.2s ease, color 0.2s ease;
 }
+/* Sinaliza que há mais abas fora de vista, sem poluir com barra de rolagem */
+.nav-tabs-dock { position: relative; }
+.nav-tabs-dock::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 34px;
+  border-radius: 0 100px 100px 0;
+  background: linear-gradient(90deg, transparent, var(--nav-bg));
+  pointer-events: none; opacity: 0; transition: opacity 0.25s ease;
+}
+.nav-tabs-dock.tem-mais::after { opacity: 1; }
 .nav-tab:hover {
   color: var(--text2); background: var(--surface2);
 }
@@ -162,7 +186,9 @@ body {
 .quote-ticker { font-size: 11px; color: var(--text3); font-style: italic; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── LAYOUT ─── */
-.main { max-width: 1400px; margin: 0 auto; padding: 28px 28px 90px; }
+/* 1400px deixava 578px de vazio de cada lado num monitor de 2560 enquanto a
+   barra atravessava a tela inteira — o descompasso é que saltava aos olhos. */
+.main { max-width: 1760px; margin: 0 auto; padding: 28px 28px 90px; }
 .section { display: none; animation: fadeIn 0.35s ease; }
 .section.active { display: block; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
@@ -3763,7 +3789,7 @@ function showSection(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('s-' + id).classList.add('active');
-  if (btn) btn.classList.add('active');
+  if (btn) { btn.classList.add('active'); _scrollTabToView(btn); }
   if (id === 'dashboard')  renderDashboard();
   if (id === 'orcamento')  renderOrcamento();
   if (id === 'calendario') renderCalendario();
@@ -5629,6 +5655,38 @@ function goToResult(section) {
   });
 }
 
+// Régua de abas: mostra a sombra à direita enquanto houver aba fora de vista e
+// mantém a aba ativa visível ao navegar (senão a seção atual some da régua).
+function _initNavTabsScroll() {
+  const dock = document.querySelector('.nav-tabs-dock');
+  const tabs = document.querySelector('.nav-tabs');
+  if (!dock || !tabs) return;
+  const atualizar = () => {
+    const fim = tabs.scrollLeft + tabs.clientWidth >= tabs.scrollWidth - 2;
+    dock.classList.toggle('tem-mais', tabs.scrollWidth > tabs.clientWidth + 2 && !fim);
+  };
+  tabs.addEventListener('scroll', atualizar, { passive: true });
+  addEventListener('resize', atualizar);
+  atualizar();
+  // Roda do mouse sobre a régua rola na horizontal (sem isso, no desktop só dá
+  // para arrastar).
+  tabs.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    if (tabs.scrollWidth <= tabs.clientWidth) return;
+    e.preventDefault();
+    tabs.scrollLeft += e.deltaY;
+  }, { passive: false });
+}
+
+function _scrollTabToView(btn) {
+  if (!btn || !btn.closest) return;
+  const tabs = btn.closest('.nav-tabs');
+  if (!tabs || tabs.scrollWidth <= tabs.clientWidth) return;
+  const b = btn.getBoundingClientRect(), t = tabs.getBoundingClientRect();
+  if (b.left < t.left + 8)       tabs.scrollLeft -= (t.left + 8 - b.left);
+  else if (b.right > t.right - 8) tabs.scrollLeft += (b.right - (t.right - 8));
+}
+
 function clearSearch() {
   const inp = document.getElementById('searchInput');
   const box = document.getElementById('searchResults');
@@ -6194,7 +6252,7 @@ async function _bootApp() {
   renderDashboard();
   initFocus(); _initDateDefaults();
   _triggerRitual(); _triggerCheckin();
-  _initBottomNavFade();
+  _initBottomNavFade(); _initNavTabsScroll();
   // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
   // showSection também as re-renderiza ao navegar, então nada fica desatualizado.
   const _renderRestante = () => { renderOrcamento(); renderDividas(); renderEmprestimos(); calcJuros(); renderMetas(); renderDados(); };

@@ -1827,6 +1827,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .kpi-card:nth-child(4) { animation-delay: 0.20s; }
 .kpi-card:nth-child(5) { animation-delay: 0.25s; }
 .kpi-card:nth-child(6) { animation-delay: 0.30s; }
+.kpi-card:nth-child(7) { animation-delay: 0.35s; }
 
 /* ─── 9. CARD — HIGHLIGHT SUPERIOR ATUALIZADO ─── */
 .card::before {
@@ -5056,10 +5057,21 @@ function renderDashboard() {
   const badgeTaxa  = taxa >= 30 ? `<span class="kpi-badge ok">⚡ Meta FIRE</span>` : taxa >= 20 ? `<span class="kpi-badge ok">✓ Saudável</span>` : taxa >= 10 ? `<span class="kpi-badge warn">⚠ Abaixo de 20%</span>` : `<span class="kpi-badge bad">🚨 Crítico</span>`;
   const badgeDiv   = totDiv === 0 ? `<span class="kpi-badge ok">✓ Livre de dívidas</span>` : S.dividas.length === 1 ? `<span class="kpi-badge warn">1 dívida ativa</span>` : `<span class="kpi-badge bad">${S.dividas.length} dívidas ativas</span>`;
 
+  // Empréstimos: saldo = valor presente das parcelas restantes (não soma nominal).
+  // O badge mostra o compromisso mensal, que é o que aperta o fluxo de caixa.
+  const emps      = S.emprestimos || [];
+  const empAtivos = emps.filter(e => (e.pagas || 0) < (e.parcelas || 0));
+  const empSaldo  = emps.reduce((s, e) => s + _empSaldo(e), 0);
+  const empMensal = empAtivos.reduce((s, e) => s + e.parcela, 0);
+  const badgeEmp  = !emps.length      ? `<span class="kpi-badge ok">✓ Sem empréstimos</span>`
+                  : !empAtivos.length ? `<span class="kpi-badge ok">✓ Todos quitados</span>`
+                  : `<span class="kpi-badge ${empMensal > desp * 0.3 ? 'bad' : 'warn'}">${fmt(empMensal)}/mês · ${empAtivos.length} ativo${empAtivos.length > 1 ? 's' : ''}</span>`;
+
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card gold"><div class="kpi-label">Patrimônio Líquido</div><div class="kpi-value gold">${fmt(patLiq)}</div>${badgePatr}</div>
     <div class="kpi-card green"><div class="kpi-label">Renda Mensal</div><div class="kpi-value green">${fmt(renda)}</div>${badgeRenda}</div>
     <div class="kpi-card red"><div class="kpi-label">Despesas Mensais</div><div class="kpi-value red">${fmt(desp)}</div>${badgeDesp}</div>
+    <div class="kpi-card red" onclick="showSection('emprestimos',document.querySelector('.nav-tab[onclick*=&quot;emprestimos&quot;]'))" style="cursor:pointer"><div class="kpi-label">Empréstimos</div><div class="kpi-value red">${fmt(empSaldo)}</div>${badgeEmp}</div>
     <div class="kpi-card ${saldo>=0?'green':'red'}"><div class="kpi-label">Saldo Mensal</div><div class="kpi-value ${saldo>=0?'green':'red'}">${fmt(saldo)}</div>${badgeSaldo}</div>
     <div class="kpi-card blue"><div class="kpi-label">Taxa de Poupança</div><div class="kpi-value blue">${fmtP(Math.max(0,taxa))}</div><div class="progress-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${Math.min(100,Math.max(0,taxa))}%;background:${taxa>=20?'var(--green)':'var(--gold)'}"></div></div>${badgeTaxa}</div>
     <div class="kpi-card red"><div class="kpi-label">Total de Dívidas</div><div class="kpi-value red">${fmt(totDiv)}</div>${badgeDiv}</div>`;

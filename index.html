@@ -357,6 +357,7 @@ select option { background: var(--surface2); }
     rgba(61,90,138,0.05) 50%,
     rgba(168,161,151,0.04) 100%);
   border: 1px solid var(--border-md);
+  border-left: 3px solid var(--gold);
   border-radius: var(--radius);
   padding: 22px 28px 22px 38px;
   margin-bottom: 24px;
@@ -1231,7 +1232,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .debt-prog-ind .ind-l { font-size: 10px; color: var(--text3); margin-top: 1px; }
 .debt-prog-legend { font-size: 11px; color: var(--text3); font-style: italic; line-height: 1.55; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .debt-card-actions { display: flex; gap: 7px; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-/* Contador de parcelas pagas */
+
 .parcelas-counter {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface3); border: 1px solid var(--border);
@@ -1702,6 +1703,287 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #centavoCardDashboard:hover { border-color: rgba(232,184,75,0.9) !important; }
 @media (prefers-reduced-motion: reduce) { #centavoCardDashboard { animation: none; box-shadow: 0 0 18px rgba(232,184,75,0.5), inset 0 0 16px rgba(232,184,75,0.12); } }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════════════════════
+   MELHORIAS VISUAIS v2.1 — Planilha Estoica
+   Slide de seção, ripple, stagger de rows, pill nav,
+   shimmer de progresso, KPI entrada, ornamentos estoicos
+══════════════════════════════════════════════════════ */
+
+/* ─── 1. SEÇÃO — SLIDE DIRECIONAL (substitui fadeIn genérico) ─── */
+@keyframes sectionSlide {
+  from { opacity: 0; transform: translateX(22px) translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.section {
+  animation-name: sectionSlide;
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── 2. RIPPLE NOS BOTÕES ─── */
+.btn { position: relative; overflow: hidden; }
+.pe-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: peRippleAnim 0.52s linear;
+  background: rgba(255,255,255,0.22);
+  pointer-events: none;
+}
+@keyframes peRippleAnim {
+  to { transform: scale(5); opacity: 0; }
+}
+
+/* ─── 3. BOTTOM NAV — PILL DESLIZANTE ─── */
+@media (max-width: 768px) {
+  .bottom-nav { position: relative; }
+  .bn-pill {
+    position: absolute;
+    height: calc(100% - 12px);
+    top: 6px;
+    border-radius: 12px;
+    background: rgba(168,161,151,0.11);
+    border: 1px solid rgba(168,161,151,0.20);
+    box-shadow: 0 0 18px rgba(168,161,151,0.12), 0 2px 8px rgba(0,0,0,0.25);
+    transition: left 0.35s cubic-bezier(0.34,1.56,0.64,1), width 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bottom-nav button { position: relative; z-index: 1; }
+  .bottom-nav button.active { background: transparent !important; }
+}
+
+/* ─── 4. TABLE ROWS — STAGGER DE ENTRADA ─── */
+@keyframes rowSlideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+.data-table tbody tr {
+  animation: rowSlideIn 0.28s ease both;
+}
+.data-table tbody tr:nth-child(1)  { animation-delay: 0.02s; }
+.data-table tbody tr:nth-child(2)  { animation-delay: 0.05s; }
+.data-table tbody tr:nth-child(3)  { animation-delay: 0.08s; }
+.data-table tbody tr:nth-child(4)  { animation-delay: 0.11s; }
+.data-table tbody tr:nth-child(5)  { animation-delay: 0.14s; }
+.data-table tbody tr:nth-child(6)  { animation-delay: 0.17s; }
+.data-table tbody tr:nth-child(7)  { animation-delay: 0.20s; }
+.data-table tbody tr:nth-child(n+8){ animation-delay: 0.22s; }
+
+/* ─── 5. METER FILL — SHIMMER PREMIUM ─── */
+@keyframes peShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.meter-fill {
+  background-size: 200% 100%;
+  animation: peShimmer 3s ease-in-out infinite;
+}
+
+/* ─── 6. PROGRESS BAR — DOT TERMINAL ─── */
+.progress-bar {
+  position: relative;
+}
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  right: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor, 0 0 14px currentColor;
+  opacity: 0.8;
+}
+.progress-wrap { overflow: visible !important; }
+
+/* ─── 7. STOIC CARD — ORNAMENTO DECORATIVO ─── */
+.stoic-card {
+  padding-top: 28px;
+}
+.stoic-card::after {
+  background:
+    radial-gradient(ellipse at 85% 100%, rgba(168,161,151,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse at 15% 0%, rgba(61,90,138,0.07) 0%, transparent 50%);
+}
+
+/* ─── 8. KPI CARDS — ENTRADA ESCALONADA ─── */
+@keyframes kpiEntrada {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+.kpi-card { animation: kpiEntrada 0.40s cubic-bezier(0.22,1,0.36,1) both; }
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.10s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+.kpi-card:nth-child(4) { animation-delay: 0.20s; }
+.kpi-card:nth-child(5) { animation-delay: 0.25s; }
+.kpi-card:nth-child(6) { animation-delay: 0.30s; }
+
+/* ─── 9. CARD — HIGHLIGHT SUPERIOR ATUALIZADO ─── */
+.card::before {
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(168,161,151,0.16) 30%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(168,161,151,0.16) 70%,
+    transparent 95%
+  );
+}
+
+/* ─── 10. EMPTY STATE — FLUTUAÇÃO SUTIL ─── */
+@keyframes emptyFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+.empty-state .icon {
+  display: block;
+  animation: emptyFloat 3s ease-in-out infinite;
+}
+.empty-state {
+  padding: 48px 24px;
+}
+
+/* ─── 11. SECTION TITLE — GLOW SUTIL ─── */
+.section-title {
+  filter: drop-shadow(0 0 20px rgba(168,161,151,0.14));
+}
+
+/* ─── 12. INPUTS — FOCUS ELEVADO ─── */
+input:focus, select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(168,161,151,0.13), 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ─── 13. BADGE GREEN — MICRO PULSO ─── */
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(78,170,114,0.28); }
+  60%      { box-shadow: 0 0 0 5px rgba(78,170,114,0); }
+}
+.badge-green { animation: badgePulse 2.6s ease-in-out infinite; }
+
+/* ─── 14. NAV TAB ACTIVE — GLOW TEXT ─── */
+.nav-tab.active {
+  text-shadow: 0 0 18px rgba(168,161,151,0.42);
+  box-shadow:
+    0 0 0 1px rgba(168,161,151,0.22) inset,
+    0 6px 20px rgba(168,161,151,0.18),
+    0 0 10px rgba(168,161,151,0.07);
+}
+
+/* ─── 15. DEBT CARD — HOVER ELEVAÇÃO ─── */
+.debt-card {
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+.debt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.38), 0 1px 0 rgba(255,255,255,0.03) inset;
+}
+
+/* ─── 16. COFRE CHIP — HOVER ELEVADO ─── */
+.cofre-chip {
+  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+}
+.cofre-chip:hover {
+  background: rgba(168,161,151,0.10);
+  box-shadow: 0 4px 18px rgba(168,161,151,0.13), 0 0 0 1px rgba(168,161,151,0.22);
+  transform: translateY(-2px);
+}
+
+/* ─── 17. CENTAVO DAY — HOVER ZOOM ─── */
+.centavo-day {
+  transition: all 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+.centavo-day:not(.feito):not(.hoje):hover {
+  border-color: rgba(168,161,151,0.5);
+  background: rgba(168,161,151,0.09);
+  color: var(--text2);
+  transform: scale(1.10);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+}
+
+/* ─── 18. SECTION HEADER — LINHA DECORATIVA ─── */
+.section-header::after {
+  content: '';
+  position: absolute;
+  bottom: -12px; left: 0;
+  width: 42px; height: 2px;
+  border-radius: 1px;
+  background: var(--gold);
+  opacity: 0.55;
+}
+.section-header { position: relative; padding-bottom: 4px; }
+
+/* ─── 19. FORM SUCCESS FEEDBACK ─── */
+@keyframes peSucesso {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.05); }
+  65%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+.btn-primary:active { animation: peSucesso 0.36s ease; }
+
+/* ─── 20. SCROLL BAR REFINADO ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold-dim), var(--surface3));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ─── 21. GLASS OVERLAY NAS SEÇÕES ─── */
+.section.active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(ellipse 60% 30% at 80% 0%, rgba(168,161,151,0.03) 0%, transparent 60%);
+}
+
+/* ─── 22. LINK ESTOICO (auth) ─── */
+.auth-link {
+  position: relative;
+}
+.auth-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 0; height: 1px;
+  background: rgba(183,176,163,0.7);
+  transition: width 0.25s ease;
+}
+.auth-link:hover::after { width: 100%; }
+
+/* ─── 23. DEBT AVISTA — BRILHO PULSO ─── */
+@keyframes avistaGlow {
+  0%, 100% { box-shadow: 0 2px 0 rgba(255,255,255,0.03) inset, 0 4px 18px rgba(192,98,72,0.08); }
+  50%      { box-shadow: 0 2px 0 rgba(255,255,255,0.03) inset, 0 6px 28px rgba(192,98,72,0.22); }
+}
+.debt-avista { animation: avistaGlow 3s ease-in-out infinite; }
+
+/* ─── 24. CIRCLE INDICATOR — GLOW ROTATIVO ─── */
+.circle-indicator {
+  background: radial-gradient(circle at 38% 32%, rgba(168,161,151,0.08) 0%, transparent 65%);
+}
+
+/* ─── 25. FOCUS MODE WIDGET — BLUR APRIMORADO ─── */
+.focus-widget {
+  backdrop-filter: blur(2px);
+}
+
+/* ─── reduced-motion: respeitar preferência ─── */
+@media (prefers-reduced-motion: reduce) {
+  .section, .kpi-card, .data-table tbody tr,
+  .pe-ripple, .empty-state .icon,
+  .badge-green, .debt-avista, .meter-fill {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1874,7 +2156,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
   </div>
 
-  <div class="stoic-card">
+  <div class="stoic-card" data-orn="1">
+    <div class="stoic-ornament"><span class="stoic-ornament-center">✦ ✦ ✦</span></div>
     <div class="stoic-quote" id="stoicQuote">Riqueza não consiste em ter grandes posses, mas em ter poucas necessidades.</div>
     <div class="stoic-author" id="stoicAuthor">— Epictetus</div>
   </div>
@@ -2654,6 +2937,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 
   <div class="card">
+    <div class="card-title">🕘 Histórico Restaurável</div>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+      Pontos de restauração criados <strong>automaticamente</strong> a cada dia de uso (últimos 14 dias).
+      Se algo for apagado ou alterado por engano, volte para um dia anterior sem perder o resto.
+    </p>
+    <div id="cardSnapshots"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">🤖 Contexto para o Claude</div>
     <p style="font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.65">
       Exporta um snapshot com seus dados financeiros + metadados do projeto para o Claude retomar
@@ -2831,6 +3123,13 @@ function setSyncStatus(status) {
 }
 
 async function syncToCloud() {
+  // Guard anti-wipe: não sobe estado totalmente vazio por cima de dados já
+  // existentes (protege contra zeragem acidental / sobrescrita indevida da
+  // nuvem). Uma limpeza intencional passa via _wipeAutorizado (ver limpeza).
+  if (!_wipeAutorizado && _contarLancamentos(S) === 0 && _temSnapshotComDados()) {
+    console.warn('[Save] Envio à nuvem bloqueado: estado vazio sobre dados existentes.');
+    return;
+  }
   setSyncStatus('saving');
   try {
     // Inclui session_id dentro do JSON para filtrar no Realtime
@@ -2864,7 +3163,7 @@ async function loadFromCloud() {
       if (cloudSaved >= localSaved) {
         // Nuvem igual ou mais nova → adota
         Object.assign(S, cleanData);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch(e) {}
+        _writeLocal();
       } else {
         // Cache LOCAL é mais recente (lançamentos ainda não sincronizados) →
         // mantém o local e reenvia pra nuvem, pra nunca perder dado do usuário.
@@ -2900,7 +3199,7 @@ function setupRealtime() {
         setSyncStatus('incoming');
         const { _sid, ...cleanData } = data;
         Object.assign(S, cleanData);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch(e) {}
+        _writeLocal();
 
         // Atualizar campo de ativos se existir no DOM
         const elAtivos = document.getElementById('metaAtivos');
@@ -2956,30 +3255,96 @@ let S = {
   cofre: { metaDiaria: 5, taxaAnual: 10, registros: [], ultimo: '', melhorStreak: 0 }
 };
 
-// Debounce: localStorage imediato, Supabase após 600ms de inatividade
+// ══════════════════════════════════════════════════
+// SALVAMENTO BLINDADO — nenhum lançamento se perde
+// ══════════════════════════════════════════════════
+// Camadas de proteção (para manter a gestão sempre íntegra):
+//  1) save(): grava localStorage na hora + Supabase (debounce 600ms).
+//  2) Watchdog (4s): compara S com o último estado persistido e salva sozinho
+//     se algo mudou — cobre qualquer tela que esqueça de chamar save().
+//  3) Snapshots diários locais (últimos 14 dias), restauráveis na aba Dados.
+//  4) Guard anti-wipe: nunca sobe estado vazio por cima de dados existentes.
+//  5) Flush imediato em visibilitychange E pagehide (não perde no fechamento).
+const SNAP_KEY = 'pe-snapshots';
+const SNAP_MAX = 14;                 // dias de histórico mantidos
 let _saveTimer = null;
-function save() {
+let _lastPersisted = '';             // JSON do último S gravado no localStorage
+let _wipeAutorizado = false;         // libera o guard numa limpeza intencional
+
+// Grava S no localStorage e registra a marca do que foi persistido (baseline
+// do watchdog). Usado também quando a nuvem/realtime atualiza o estado.
+function _writeLocal() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
-    localStorage.setItem('pe-last-save', Date.now().toString());
+    const j = JSON.stringify(S);
+    localStorage.setItem(STORAGE_KEY, j);
+    _lastPersisted = j;
   } catch(e) {}
+}
+
+function _contarLancamentos(o) {
+  o = o || S;
+  return (o.receitas||[]).length + (o.despesas||[]).length +
+         (o.dividas||[]).length  + (o.contasUrgentes||[]).length +
+         (o.pagas||[]).length    + (o.marcos||[]).length;
+}
+
+// Guarda no máx. 1 snapshot por dia (o 1º save do dia) — ponto de restauração.
+function _snapshotDiario() {
+  try {
+    if (_contarLancamentos(S) === 0) return;    // não arquiva estado vazio
+    const dia = todayISO();
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch(e) {}
+    if (arr.some(s => s.dia === dia)) return;    // já existe o ponto de hoje
+    arr.push({
+      dia, t: Date.now(),
+      resumo: { rec:(S.receitas||[]).length, desp:(S.despesas||[]).length,
+                div:(S.dividas||[]).length, contas:(S.contasUrgentes||[]).length },
+      dados: JSON.parse(JSON.stringify(S)),
+    });
+    arr.sort((a,b) => a.t - b.t);
+    if (arr.length > SNAP_MAX) arr = arr.slice(-SNAP_MAX);
+    localStorage.setItem(SNAP_KEY, JSON.stringify(arr));
+  } catch(e) { /* localStorage cheio → ignora, sem travar o app */ }
+}
+
+function _temSnapshotComDados() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SNAP_KEY)) || [];
+    return arr.some(s => s.resumo && (s.resumo.rec||s.resumo.desp||s.resumo.div||s.resumo.contas));
+  } catch(e) { return false; }
+}
+
+function save() {
+  _writeLocal();
+  try { localStorage.setItem('pe-last-save', Date.now().toString()); } catch(e) {}
+  _snapshotDiario();
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(syncToCloud, 600);
 }
 
+// Watchdog: rede de segurança contra qualquer mutação de S que não chamou
+// save(). A cada 4s, se o estado divergir do último persistido, salva.
+setInterval(() => {
+  if (!appReady) return;
+  try { if (JSON.stringify(S) !== _lastPersisted) save(); } catch(e) {}
+}, 4000);
+
 // Se o app for para segundo plano (troca de app, tela bloqueada, aba fechada)
-// antes dos 600ms do debounce acima, o salvamento na nuvem nunca dispara —
-// e na próxima abertura loadFromCloud() sobrescreve o dispositivo com o
-// estado antigo da nuvem, "perdendo" a última ação (ex.: marcar o dia no
-// Desafio do Centavo). visibilitychange dispara de forma confiável antes do
-// app ser suspenso, mesmo no mobile — então força o envio imediato aqui.
+// antes dos 600ms do debounce, o envio à nuvem nunca dispararia — e na próxima
+// abertura loadFromCloud() sobrescreveria o dispositivo com o estado antigo,
+// "perdendo" a última ação. visibilitychange (mobile) e pagehide (fechar aba)
+// disparam de forma confiável antes da suspensão — força o envio imediato.
+function _flushSave() {
+  if (!_saveTimer) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
+  syncToCloud();
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden' && _saveTimer) {
-    clearTimeout(_saveTimer);
-    _saveTimer = null;
-    syncToCloud();
-  }
+  if (document.visibilityState === 'hidden') _flushSave();
 });
+window.addEventListener('pagehide', _flushSave);
 
 // ══════════════════════════════════════════════════
 // FORMATAÇÃO
@@ -5216,6 +5581,46 @@ function renderDados() {
       <span>🗂 Registros: <strong style="color:var(--text)">${total}</strong></span>
       <span>🕐 Último save: <strong style="color:var(--text)">${lastStr}</strong></span>
     </div>`;
+  renderSnapshots();
+}
+
+// ── Histórico restaurável (snapshots diários locais) ──────────
+function renderSnapshots() {
+  const el = document.getElementById('cardSnapshots');
+  if (!el) return;
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch(e) {}
+  if (!arr.length) {
+    el.innerHTML = '<p style="font-size:12.5px;color:var(--text3)">Nenhum ponto de restauração ainda — eles surgem automaticamente conforme você usa o app.</p>';
+    return;
+  }
+  el.innerHTML = arr.slice().reverse().map(s => {
+    const d = new Date(s.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const r = s.resumo || {};
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border-radius:10px;padding:11px 13px;margin-bottom:8px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${d}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${r.rec||0} receitas · ${r.desp||0} despesas · ${r.div||0} dívidas</div>
+      </div>
+      <button class="btn" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="_restaurarSnapshot('${s.dia}')">Restaurar</button>
+    </div>`;
+  }).join('');
+}
+
+function _restaurarSnapshot(dia) {
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch(e) {}
+  const snap = arr.find(s => s.dia === dia);
+  if (!snap) { _showToast('Ponto de restauração não encontrado.'); return; }
+  const d = new Date(snap.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  if (!confirm(`Restaurar os dados para o ponto de ${d}?\n\nO estado atual será substituído por esse ponto (o app continua salvando normalmente depois).`)) return;
+  const restaurado = JSON.parse(JSON.stringify(snap.dados));
+  Object.keys(S).forEach(k => { delete S[k]; });   // zera referência atual
+  Object.assign(S, restaurado);                     // aplica o ponto salvo
+  _ensureDefaults();
+  save();
+  renderDashboard(); renderOrcamento(); renderDividas(); calcJuros(); renderMetas(); renderDados();
+  _showToast('✅ Dados restaurados do ponto selecionado.');
 }
 
 function exportBackup() {
@@ -5403,7 +5808,11 @@ function _confirmarLimpeza() {
     centavo:{ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false },
     meta10x:{ ativo:false, valorAlvo:0, valorInicial:0, dataInicio:'', dataFim:'' },
   });
+  // Limpeza intencional: libera o guard anti-wipe e remove o histórico local.
+  try { localStorage.removeItem(SNAP_KEY); } catch(e) {}
+  _wipeAutorizado = true;
   save();
+  _wipeAutorizado = false;
   renderDashboard(); renderOrcamento(); renderDividas(); renderMetas(); renderDados();
   _showToast('Dados apagados. Nova jornada começa agora.');
 }
@@ -5428,14 +5837,20 @@ async function _bootApp() {
   //    save() sempre grava no localStorage, então os dados já estão aqui.
   try { const d = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (d && typeof d === 'object') Object.assign(S, d); } catch(e) {}
   _ensureDefaults();
+  try { _lastPersisted = JSON.stringify(S); } catch(e) {}  // baseline do watchdog
+  _snapshotDiario();                                        // ponto de restauração do dia
   appReady = true;
   const el = document.getElementById('metaAtivos');
   if (el) el.value = S.ativos || 0;
-  renderDashboard(); renderOrcamento(); renderDividas(); calcJuros(); renderMetas();
+  // Pinta só a seção visível (dashboard) primeiro → primeira pintura mais rápida.
+  renderDashboard();
   initFocus(); _initDateDefaults();
   _triggerRitual(); _triggerCheckin();
-  renderDados();
   _initBottomNavFade();
+  // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
+  // showSection também as re-renderiza ao navegar, então nada fica desatualizado.
+  const _renderRestante = () => { renderOrcamento(); renderDividas(); calcJuros(); renderMetas(); renderDados(); };
+  (window.requestIdleCallback || window.requestAnimationFrame)(_renderRestante);
   // 2) NUVEM em segundo plano — não trava a entrada; re-renderiza só se vier algo mais novo.
   setSyncStatus('loading');
   loadFromCloud().then(() => {
@@ -7148,6 +7563,28 @@ async function iaAnalisarFinancas() {
 // ── Service Worker (PWA) ─────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // O SW abre o app a partir do cache (instantâneo) e revalida a versão em 2º
+  // plano. Se detectar um deploy novo, avisa aqui e oferecemos recarregar.
+  navigator.serviceWorker.addEventListener('message', ev => {
+    if (ev.data && ev.data.type === 'SW_UPDATED') _showUpdateBanner();
+  });
+}
+
+let _updateBannerShown = false;
+function _showUpdateBanner() {
+  if (_updateBannerShown) return;
+  _updateBannerShown = true;
+  const b = document.createElement('div');
+  b.id = '_estoicoUpdate';
+  b.style.cssText = 'position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:var(--surface3);color:var(--text);padding:12px 16px;border-radius:16px;font-size:13px;z-index:10000;border:1px solid var(--gold-dim);box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:calc(100vw - 24px);opacity:0;transition:opacity .3s,transform .3s';
+  b.innerHTML = '<span>✨ Nova versão disponível</span>' +
+    '<button style="background:var(--gold);color:#1a0f08;border:none;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">Atualizar</button>' +
+    '<button aria-label="Dispensar" style="background:none;border:none;color:var(--text3);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
+  const [btnUp, btnClose] = b.querySelectorAll('button');
+  btnUp.onclick   = () => location.reload();
+  btnClose.onclick = () => { b.style.opacity = '0'; setTimeout(() => b.remove(), 300); };
+  document.body.appendChild(b);
+  requestAnimationFrame(() => { b.style.opacity = '1'; b.style.transform = 'translateX(-50%) translateY(-4px)'; });
 }
 
 // ── PWA Install Prompt ───────────────────────────
@@ -7551,6 +7988,112 @@ async function pwaInstall() {
     .observe(document.body,{childList:true,subtree:true});
   document.addEventListener('DOMContentLoaded',attachKpi);
   setTimeout(attachKpi,800);
+})();
+</script>
+
+<!-- ═══ MELHORIAS VISUAIS v2.1 ═══════════════════════════
+     Ripple em botões + Pill no bottom nav + Stoic ornament
+══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ── 1. RIPPLE EM TODOS OS .btn ──────────────────────── */
+  function criarRipple(e) {
+    var btn = e.currentTarget;
+    var rect = btn.getBoundingClientRect();
+    var tam = Math.max(btn.offsetWidth, btn.offsetHeight);
+    var x = e.clientX - rect.left - tam / 2;
+    var y = e.clientY - rect.top  - tam / 2;
+    var el = document.createElement('span');
+    el.className = 'pe-ripple';
+    el.style.cssText = [
+      'width:' + tam + 'px',
+      'height:' + tam + 'px',
+      'left:' + x + 'px',
+      'top:' + y + 'px'
+    ].join(';');
+    btn.appendChild(el);
+    setTimeout(function() { el.remove(); }, 560);
+  }
+
+  function bindRipple() {
+    document.querySelectorAll('.btn:not([data-ripple])').forEach(function(b) {
+      b.setAttribute('data-ripple', '1');
+      b.addEventListener('click', criarRipple);
+    });
+  }
+
+  /* ── 2. BOTTOM NAV PILL DESLIZANTE ─────────────────── */
+  function updateBnPill() {
+    var nav = document.querySelector('.bottom-nav');
+    if (!nav || window.innerWidth > 768) return;
+
+    var pill = nav.querySelector('.bn-pill');
+    if (!pill) {
+      pill = document.createElement('div');
+      pill.className = 'bn-pill';
+      nav.insertBefore(pill, nav.firstChild);
+    }
+
+    var active = nav.querySelector('button.active');
+    if (!active) { pill.style.opacity = '0'; return; }
+
+    var navRect  = nav.getBoundingClientRect();
+    var btnRect  = active.getBoundingClientRect();
+    var scrolled = nav.scrollLeft;
+
+    pill.style.opacity = '1';
+    pill.style.left    = (btnRect.left - navRect.left + scrolled) + 'px';
+    pill.style.width   = btnRect.width + 'px';
+  }
+
+  /* ── 3. ORNAMENTO NA STOIC CARD ─────────────────────── */
+  function injetarOrnamento() {
+    document.querySelectorAll('.stoic-card:not([data-orn])').forEach(function(card) {
+      card.setAttribute('data-orn', '1');
+      var orn = document.createElement('div');
+      orn.className = 'stoic-ornament';
+      orn.innerHTML = '<span class="stoic-ornament-center">✦ ✦ ✦</span>';
+      card.insertBefore(orn, card.firstChild);
+    });
+  }
+
+  /* ── 4. INTEGRAÇÃO COM showSection ─────────────────── */
+  var _origShowSection = window.showSection;
+  window.showSection = function(id, btn) {
+    if (_origShowSection) _origShowSection.apply(this, arguments);
+    // Pill após troca de seção
+    setTimeout(updateBnPill, 60);
+    // Ripple em novos botões renderizados
+    setTimeout(bindRipple, 200);
+  };
+
+  /* ── 5. INICIALIZAÇÃO ────────────────────────────────── */
+  function init() {
+    bindRipple();
+    injetarOrnamento();
+    updateBnPill();
+
+    // Atualiza pill ao scroll horizontal do bottom nav
+    var nav = document.querySelector('.bottom-nav');
+    if (nav) nav.addEventListener('scroll', updateBnPill, { passive: true });
+
+    // Re-bind ripple quando DOM mudar (seções renderizadas dinamicamente)
+    var obs = new MutationObserver(function() {
+      bindRipple();
+      injetarOrnamento();
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  // Fallback para garantir execução pós-auth
+  setTimeout(init, 900);
 })();
 </script>
 </body>

@@ -1,4 +1,4 @@
-const CACHE = 'pe-v9';
+const CACHE = 'pe-v10';
 const CDN   = 'pe-cdn-v6';
 const CORE  = ['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-192-maskable.png', '/icon-512-maskable.png'];
 
@@ -15,18 +15,33 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Atualiza o shell em cache e avisa as abas abertas se o HTML mudou (deploy novo).
+async function updateShell(resp) {
+  const cache  = await caches.open(CACHE);
+  const cached = await cache.match('/');
+  if (cached) {
+    const [novo, velho] = await Promise.all([resp.clone().text(), cached.clone().text()]);
+    if (novo === velho) return;               // nada mudou → não recacheia nem notifica
+  }
+  await cache.put('/', resp);
+  const clients = await self.clients.matchAll({ type: 'window' });
+  clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }));
+}
+
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Navegação: sempre network-first sem fallback para cache (garante versão nova)
+  // Navegação: STALE-WHILE-REVALIDATE — serve o shell do cache na hora (abertura
+  // instantânea) e revalida na rede em 2º plano. Se veio versão nova, avisa a aba.
   if (e.request.mode === 'navigate') {
+    const network = fetch(e.request, { cache: 'no-store' })
+      .then(r => { if (r && r.ok) updateShell(r.clone()); return r; })
+      .catch(() => null);
+    e.waitUntil(network.catch(() => {}));     // mantém a revalidação viva em 2º plano
     e.respondWith(
-      fetch(e.request, { cache: 'no-store' })
-        .then(r => {
-          if (r.ok) caches.open(CACHE).then(c => c.put('/', r.clone()));
-          return r;
-        })
-        .catch(() => caches.match('/'))
+      caches.open(CACHE)
+        .then(c => c.match('/'))
+        .then(cached => cached || network.then(r => r || fetch(e.request)))
     );
     return;
   }

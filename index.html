@@ -1828,6 +1828,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .kpi-card:nth-child(5) { animation-delay: 0.25s; }
 .kpi-card:nth-child(6) { animation-delay: 0.30s; }
 .kpi-card:nth-child(7) { animation-delay: 0.35s; }
+.kpi-card:nth-child(8) { animation-delay: 0.40s; }
 
 /* ─── 9. CARD — HIGHLIGHT SUPERIOR ATUALIZADO ─── */
 .card::before {
@@ -5110,6 +5111,16 @@ function renderDashboard() {
                   : !empAtivos.length ? `<span class="kpi-badge ok">✓ Todos quitados</span>`
                   : `<span class="kpi-badge ${empMensal > desp * 0.3 ? 'bad' : 'warn'}">${fmt(empMensal)}/mês · ${empAtivos.length} ativo${empAtivos.length > 1 ? 's' : ''}</span>`;
 
+  // Reserva de Emergência — mesma fórmula da seção Reserva e do card em Metas:
+  // meta custom, ou 12x as despesas mensais quando não definida.
+  const resAcum  = S.reserva?.acumulado || 0;
+  const resMeta  = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
+  const resPct   = resMeta > 0 ? Math.min(100, (resAcum / resMeta) * 100) : 0;
+  const resMeses = desp > 0 ? resAcum / desp : 0;
+  const badgeRes = resMeta === 0   ? `<span class="kpi-badge warn">— Lance suas despesas</span>`
+                 : resPct >= 100   ? `<span class="kpi-badge ok">✓ Meta atingida</span>`
+                 : `<span class="kpi-badge ${resMeses >= 6 ? 'ok' : resMeses >= 3 ? 'warn' : 'bad'}">${resMeses.toFixed(1)} ${resMeses === 1 ? 'mês coberto' : 'meses cobertos'}</span>`;
+
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card gold"><div class="kpi-label">Patrimônio Líquido</div><div class="kpi-value gold">${fmt(patLiq)}</div>${badgePatr}</div>
     <div class="kpi-card green"><div class="kpi-label">Renda Mensal</div><div class="kpi-value green">${fmt(renda)}</div>${badgeRenda}</div>
@@ -5117,7 +5128,8 @@ function renderDashboard() {
     <div class="kpi-card red" onclick="showSection('emprestimos',document.querySelector('.nav-tab[onclick*=&quot;emprestimos&quot;]'))" style="cursor:pointer"><div class="kpi-label">Empréstimos</div><div class="kpi-value red">${fmt(empSaldo)}</div>${badgeEmp}</div>
     <div class="kpi-card ${saldo>=0?'green':'red'}"><div class="kpi-label">Saldo Mensal</div><div class="kpi-value ${saldo>=0?'green':'red'}">${fmt(saldo)}</div>${badgeSaldo}</div>
     <div class="kpi-card blue"><div class="kpi-label">Taxa de Poupança</div><div class="kpi-value blue">${fmtP(Math.max(0,taxa))}</div><div class="progress-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${Math.min(100,Math.max(0,taxa))}%;background:${taxa>=20?'var(--green)':'var(--gold)'}"></div></div>${badgeTaxa}</div>
-    <div class="kpi-card red"><div class="kpi-label">Total de Dívidas</div><div class="kpi-value red">${fmt(totDiv)}</div>${badgeDiv}</div>`;
+    <div class="kpi-card red"><div class="kpi-label">Total de Dívidas</div><div class="kpi-value red">${fmt(totDiv)}</div>${badgeDiv}</div>
+    <div class="kpi-card green" onclick="showSection('reserva',document.querySelector('.nav-tab[onclick*=&quot;reserva&quot;]'))" style="cursor:pointer"><div class="kpi-label">Reserva de Emergência</div><div class="kpi-value green">${fmt(resAcum)}</div><div class="progress-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${resPct}%;background:${resPct>=100?'var(--green)':resMeses>=3?'var(--gold)':'var(--red)'}"></div></div>${badgeRes}</div>`;
 
   // Donut chart — estilo Mint/Nubank
   const byCat = {};

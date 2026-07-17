@@ -7839,7 +7839,19 @@ async function iaAnalisarFinancas() {
 
 // ── Service Worker (PWA) ─────────────────────────
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // O browser só procura um sw.js novo quando há navegação. Um PWA instalado
+    // fica residente e é retomado da memória sem navegar, então pode servir o
+    // shell velho por dias sem nunca perguntar se saiu deploy. Checar ao retomar
+    // (e de hora em hora com o app aberto) fecha esse buraco.
+    const checarUpdate = () => { if (!document.hidden) reg.update().catch(() => {}); };
+    document.addEventListener('visibilitychange', checarUpdate);
+    setInterval(checarUpdate, 3600000);
+    checarUpdate();
+    // Um SW novo assumiu o controle (skipWaiting + clients.claim): o shell em
+    // cache mudou sob os nossos pés — oferece recarregar em vez de ficar velho.
+    navigator.serviceWorker.addEventListener('controllerchange', () => _showUpdateBanner());
+  }).catch(() => {});
   // O SW abre o app a partir do cache (instantâneo) e revalida a versão em 2º
   // plano. Se detectar um deploy novo, avisa aqui e oferecemos recarregar.
   navigator.serviceWorker.addEventListener('message', ev => {

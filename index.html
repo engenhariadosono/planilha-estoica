@@ -1232,7 +1232,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .debt-prog-ind .ind-l { font-size: 10px; color: var(--text3); margin-top: 1px; }
 .debt-prog-legend { font-size: 11px; color: var(--text3); font-style: italic; line-height: 1.55; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .debt-card-actions { display: flex; gap: 7px; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-
+/* Prévia ao vivo da taxa embutida no formulário de empréstimo */
+.emp-preview:not(:empty) {
+  margin-top: 12px; padding: 10px 13px;
+  background: var(--surface3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+}
+/* Contador de parcelas pagas */
 .parcelas-counter {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface3); border: 1px solid var(--border);
@@ -2089,6 +2096,7 @@ input:focus, select:focus {
       <button class="nav-tab" onclick="showSection('orcamento',this)"><span class="nt-icon">💰</span>Orçamento</button>
       <button class="nav-tab" onclick="showSection('calendario',this)"><span class="nt-icon">📅</span>Calendário</button>
       <button class="nav-tab" onclick="showSection('dividas',this)"><span class="nt-icon">💳</span>Dívidas</button>
+      <button class="nav-tab" onclick="showSection('emprestimos',this)"><span class="nt-icon">🏛️</span>Empréstimos</button>
       <button class="nav-tab" onclick="showSection('juros',this)"><span class="nt-icon">📈</span>Juros</button>
       <button class="nav-tab" onclick="showSection('metas',this)"><span class="nt-icon">🎯</span>Metas</button>
       <button class="nav-tab" onclick="showSection('reserva',this)"><span class="nt-icon">🛡️</span>Reserva</button>
@@ -2515,6 +2523,40 @@ input:focus, select:focus {
     <div id="payoffSchedule"></div>
   </div>
   <div class="card" style="margin-top:16px" id="dividasQuitadas"></div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     EMPRÉSTIMOS — Tabela Price
+══════════════════════════════════════════ -->
+<section class="section" id="s-emprestimos">
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">🏛️ Empréstimos</h1>
+      <p class="section-sub">Parcelas contratadas · Tabela Price — descubra a taxa real que o contrato esconde</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">Cadastrar Empréstimo</div>
+    <div class="form-row">
+      <div class="form-group"><label>Credor / Contrato</label><input type="text" id="empNome" placeholder="Ex: Consignado Banco X"></div>
+      <div class="form-group" style="max-width:155px"><label>Valor emprestado</label><input type="number" id="empValor" placeholder="0,00" min="0" oninput="_empPreview()"></div>
+      <div class="form-group" style="max-width:130px"><label>Nº de parcelas</label><input type="number" id="empParcelas" placeholder="24" min="1" step="1" oninput="_empPreview()"></div>
+      <div class="form-group" style="max-width:155px"><label>Valor da parcela</label><input type="number" id="empParcela" placeholder="0,00" min="0" oninput="_empPreview()"></div>
+      <div class="form-group" style="max-width:130px"><label>Já pagas</label><input type="number" id="empPagas" placeholder="0" min="0" step="1"></div>
+      <div class="form-group" style="max-width:148px"><label>1º vencimento</label><input type="date" id="empData"></div>
+      <div class="form-group" style="max-width:110px"><label>&nbsp;</label><button class="btn btn-primary" onclick="addEmprestimo()">Registrar</button></div>
+    </div>
+    <div class="emp-preview" id="empPreview"></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">Seus Empréstimos <span class="badge badge-red" style="font-size:9px">maior taxa primeiro</span></div>
+      <div id="bodyEmprestimos" style="margin-top:6px"></div>
+    </div>
+    <div>
+      <div class="card" id="empSummary"></div>
+    </div>
+  </div>
 </section>
 
 <!-- ══════════════════════════════════════════
@@ -2979,6 +3021,7 @@ input:focus, select:focus {
   <button onclick="showSection('orcamento',this);syncBottomNav(this)"><span class="bn-icon">💰</span>Orçamento</button>
   <button onclick="showSection('calendario',this);syncBottomNav(this)"><span class="bn-icon">📅</span>Calendário</button>
   <button onclick="showSection('dividas',this);syncBottomNav(this)"><span class="bn-icon">💳</span>Dívidas</button>
+  <button onclick="showSection('emprestimos',this);syncBottomNav(this)"><span class="bn-icon">🏛️</span>Empréstimos</button>
   <button onclick="showSection('juros',this);syncBottomNav(this)"><span class="bn-icon">📈</span>Juros</button>
   <button onclick="showSection('metas',this);syncBottomNav(this)"><span class="bn-icon">🎯</span>Metas</button>
   <button onclick="showSection('reserva',this);syncBottomNav(this)"><span class="bn-icon">🛡️</span>Reserva</button>
@@ -3285,7 +3328,8 @@ function _contarLancamentos(o) {
   o = o || S;
   return (o.receitas||[]).length + (o.despesas||[]).length +
          (o.dividas||[]).length  + (o.contasUrgentes||[]).length +
-         (o.pagas||[]).length    + (o.marcos||[]).length;
+         (o.pagas||[]).length    + (o.marcos||[]).length +
+         (o.emprestimos||[]).length;
 }
 
 // Guarda no máx. 1 snapshot por dia (o 1º save do dia) — ponto de restauração.
@@ -3378,7 +3422,7 @@ function fmtDateShort(iso) {
 
 function _initDateDefaults() {
   const today = todayISO();
-  ['recData','despData','divData'].forEach(id => {
+  ['recData','despData','divData','empData'].forEach(id => {
     const el = document.getElementById(id);
     if (el && !el.value) el.value = today;
   });
@@ -3708,6 +3752,7 @@ function showSection(id, btn) {
   if (id === 'orcamento')  renderOrcamento();
   if (id === 'calendario') renderCalendario();
   if (id === 'dividas')    renderDividas();
+  if (id === 'emprestimos') renderEmprestimos();
   if (id === 'juros')      calcJuros();
   if (id === 'metas')      renderMetas();
   if (id === 'centavo')    { renderCentavo(); _tocarSomMoeda(); }
@@ -4064,6 +4109,234 @@ function _fmtMeses(m) {
   if (meses === 0) return aStr;
   const mStr = meses === 1 ? '1 mês' : `${meses} meses`;
   return `${aStr} e ${mStr}`;
+}
+
+// ══════════════════════════════════════════════════
+// EMPRÉSTIMOS — Tabela Price
+// ══════════════════════════════════════════════════
+// Diferente de Dívidas (rotativo, onde os meses são DERIVADOS de saldo/taxa/parcela):
+// no empréstimo o nº de parcelas é CONTRATADO e o desconhecido é a taxa efetiva
+// embutida. Derivada por bisseção sobre a Price — não há forma fechada para i.
+
+// Retorna a taxa mensal efetiva (decimal), 0 quando não há juros,
+// ou null quando a taxa excede o intervalo suportado (200%/mês).
+function _empTaxa(pv, pmt, n) {
+  if (!(pv > 0) || !(pmt > 0) || !(n > 0)) return null;
+  if (pmt * n <= pv) return 0;
+  // f(i) = pmt·(1−(1+i)^−n)/i − pv  é estritamente decrescente em i
+  const f = i => pmt * (1 - Math.pow(1 + i, -n)) / i - pv;
+  let lo = 1e-9, hi = 2;
+  if (f(hi) > 0) return null;
+  for (let k = 0; k < 200; k++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) > 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Saldo devedor = valor presente das parcelas que ainda faltam.
+function _empSaldo(e) {
+  const rest = Math.max(0, (e.parcelas || 0) - (e.pagas || 0));
+  if (!rest) return 0;
+  const i = _empTaxa(e.valor, e.parcela, e.parcelas);
+  if (!i) return e.parcela * rest;
+  return e.parcela * (1 - Math.pow(1 + i, -rest)) / i;
+}
+
+function _empProgresso(e) {
+  const total = e.parcelas || 0;
+  const pagas = Math.min(Math.max(0, e.pagas || 0), total);
+  const rest  = total - pagas;
+  const i     = _empTaxa(e.valor, e.parcela, e.parcelas);
+  const pago  = e.parcela * pagas;
+  return {
+    total, pagas, rest,
+    pct:        total > 0 ? Math.round((pagas / total) * 100) : 0,
+    taxaMes:    i,
+    taxaAno:    i === null ? null : (Math.pow(1 + i, 12) - 1),
+    saldo:      _empSaldo(e),
+    totalPago:  pago,
+    totalGeral: e.parcela * total,
+    jurosTotal: Math.max(0, e.parcela * total - e.valor),
+    quitado:    rest === 0
+  };
+}
+
+function _empDataQuitacao(e) {
+  const rest = Math.max(0, (e.parcelas || 0) - (e.pagas || 0));
+  if (!rest) return 'Quitado';
+  const dt = new Date();
+  dt.setMonth(dt.getMonth() + rest);
+  return fmtDate(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-01`);
+}
+
+function addEmprestimo() {
+  const nome     = document.getElementById('empNome').value.trim();
+  const valor    = parseFloat(document.getElementById('empValor').value);
+  const parcelas = parseInt(document.getElementById('empParcelas').value);
+  const parcela  = parseFloat(document.getElementById('empParcela').value);
+  const pagas    = parseInt(document.getElementById('empPagas').value) || 0;
+  const data     = document.getElementById('empData').value || todayISO();
+  if (!nome || [valor, parcela].some(v => isNaN(v) || v <= 0) || isNaN(parcelas) || parcelas <= 0) {
+    _showToast('Preencha nome, valor emprestado, nº de parcelas e valor da parcela.');
+    return;
+  }
+  if (pagas > parcelas) {
+    _showToast('Parcelas pagas não pode ser maior que o total contratado.');
+    return;
+  }
+  if (_empTaxa(valor, parcela, parcelas) === null) {
+    _showToast('⚠️ Esses valores embutem juros acima de 200%/mês — confira o valor emprestado e a parcela.');
+    return;
+  }
+  S.emprestimos.push({ id: Date.now(), nome, valor, parcelas, parcela, pagas, data });
+  ['empNome','empValor','empParcelas','empParcela','empPagas'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('empData').value = todayISO();
+  save(); renderEmprestimos();
+}
+
+function removeEmprestimo(id) {
+  S.emprestimos = S.emprestimos.filter(e => e.id !== id);
+  save(); renderEmprestimos();
+}
+
+function updateEmpPagas(id, val) {
+  const e = S.emprestimos.find(x => x.id === id);
+  if (!e) return;
+  e.pagas = Math.min(Math.max(0, parseInt(val) || 0), e.parcelas);
+  save(); renderEmprestimos();
+}
+
+// Prévia ao vivo no formulário — mostra a taxa embutida antes de registrar.
+function _empPreview() {
+  const box = document.getElementById('empPreview');
+  if (!box) return;
+  const valor    = parseFloat(document.getElementById('empValor').value);
+  const parcelas = parseInt(document.getElementById('empParcelas').value);
+  const parcela  = parseFloat(document.getElementById('empParcela').value);
+  if (!(valor > 0) || !(parcelas > 0) || !(parcela > 0)) { box.innerHTML = ''; return; }
+  const i = _empTaxa(valor, parcela, parcelas);
+  if (i === null) {
+    box.innerHTML = `<span style="color:var(--red)">⚠️ Juros acima de 200%/mês — confira os valores.</span>`;
+    return;
+  }
+  const juros = Math.max(0, parcela * parcelas - valor);
+  box.innerHTML = `Taxa embutida: <strong style="color:var(--gold-bright)">${(i*100).toFixed(2)}%/mês</strong>
+    · <strong style="color:var(--gold-bright)">${((Math.pow(1+i,12)-1)*100).toFixed(1)}%/ano</strong>
+    · Você paga <strong style="color:var(--red)">${fmt(juros)}</strong> de juros em ${fmt(parcela*parcelas)}`;
+}
+
+function renderEmprestimos() {
+  if (!appReady) return;
+  const body = document.getElementById('bodyEmprestimos');
+  if (!body) return;
+  const lista = S.emprestimos || [];
+
+  if (!lista.length) {
+    body.innerHTML = `<div class="empty-state"><div class="icon">🏛️</div>Nenhum empréstimo registrado — nada deve ao futuro.</div>`;
+    document.getElementById('empSummary').innerHTML = '';
+    return;
+  }
+
+  // Maior taxa primeiro — é o que mais custa.
+  const ord = [...lista].sort((a, b) => (_empTaxa(b.valor,b.parcela,b.parcelas)||0) - (_empTaxa(a.valor,a.parcela,a.parcelas)||0));
+
+  body.innerHTML = ord.map((e, idx) => {
+    const p = _empProgresso(e);
+    const isFocus = idx === 0 && !p.quitado;
+    const taxaTxt = p.taxaMes === null ? '—' : `${(p.taxaMes*100).toFixed(2)}%/mês`;
+    const restClr = p.rest <= 6 ? 'var(--green)' : p.rest <= 24 ? 'var(--gold)' : 'var(--red)';
+    return `
+    <div class="debt-card ${isFocus ? 'debt-focus' : ''}" style="margin-bottom:12px">
+      <div class="debt-card-header">
+        <div class="debt-card-name">
+          ${isFocus ? '<span class="badge badge-red" style="font-size:9px">MAIOR TAXA</span>' : ''}
+          ${p.quitado ? '<span class="badge badge-green" style="font-size:9px">QUITADO</span>' : ''}
+          ${e.nome}
+        </div>
+        <span class="debt-card-rate">${taxaTxt}</span>
+      </div>
+      <div class="debt-info-row">
+        <div class="debt-info-item">
+          <span class="debt-info-label">Valor Emprestado</span>
+          <span class="debt-info-value" style="color:var(--text)">${fmt(e.valor)}</span>
+        </div>
+        <div class="debt-info-item">
+          <span class="debt-info-label">Parcela</span>
+          <span class="debt-info-value" style="color:var(--text)">${fmt(e.parcela)}</span>
+        </div>
+        <div class="debt-info-item">
+          <span class="debt-info-label">Saldo Devedor</span>
+          <span class="debt-info-value" style="color:var(--text)">${fmt(p.saldo)}</span>
+        </div>
+        <div class="debt-info-item">
+          <span class="debt-info-label">Quitação</span>
+          <span class="debt-info-value" style="color:${restClr}">${_empDataQuitacao(e)}</span>
+        </div>
+      </div>
+      <div>
+        <div class="debt-prog-label">
+          <span class="debt-prog-title">Progresso de Quitação</span>
+          <span class="debt-prog-pct">${p.pct}%</span>
+        </div>
+        <div class="debt-prog-track">
+          <div class="debt-prog-fill" style="width:${p.pct}%;background-position:${100-p.pct}% center"></div>
+        </div>
+        <div class="parcelas-counter" style="margin-top:10px">
+          <div>
+            <div class="pc-label">Parcelas Pagas</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;font-weight:600">${p.pagas} <span style="color:var(--text3);font-weight:400">de</span> ${p.total}</div>
+          </div>
+          <div class="pc-right">
+            <input class="pc-input" type="number" min="0" max="${p.total}" value="${p.pagas}"
+              onclick="event.stopPropagation()"
+              onchange="updateEmpPagas(${e.id}, this.value)">
+            <span class="pc-pct">${p.pct}%</span>
+          </div>
+        </div>
+        <div class="debt-prog-indicators">
+          <div class="debt-prog-ind">
+            <div class="ind-n">${_fmtMeses(p.rest)}</div>
+            <div class="ind-l">Restantes</div>
+          </div>
+          <div class="debt-prog-ind">
+            <div class="ind-n" style="color:var(--red)">${fmt(p.jurosTotal)}</div>
+            <div class="ind-l">Juros Totais</div>
+          </div>
+          <div class="debt-prog-ind">
+            <div class="ind-n">${p.taxaAno === null ? '—' : (p.taxaAno*100).toFixed(1)+'%'}</div>
+            <div class="ind-l">Taxa ao Ano</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px;font-size:11px" onclick="removeEmprestimo(${e.id})">Remover</button>
+    </div>`;
+  }).join('');
+
+  // Resumo consolidado
+  const tot = lista.reduce((a, e) => {
+    const p = _empProgresso(e);
+    a.saldo += p.saldo; a.juros += p.jurosTotal; a.mensal += p.quitado ? 0 : e.parcela;
+    a.emprestado += e.valor;
+    return a;
+  }, { saldo: 0, juros: 0, mensal: 0, emprestado: 0 });
+  document.getElementById('empSummary').innerHTML = `
+    <div class="card-title">Consolidado</div>
+    <div class="debt-info-row" style="border:none;padding:0">
+      <div class="debt-info-item">
+        <span class="debt-info-label">Saldo Devedor Total</span>
+        <span class="debt-info-value" style="color:var(--text)">${fmt(tot.saldo)}</span>
+      </div>
+      <div class="debt-info-item">
+        <span class="debt-info-label">Compromisso Mensal</span>
+        <span class="debt-info-value" style="color:var(--text)">${fmt(tot.mensal)}</span>
+      </div>
+      <div class="debt-info-item">
+        <span class="debt-info-label">Juros Totais dos Contratos</span>
+        <span class="debt-info-value" style="color:var(--red)">${fmt(tot.juros)}</span>
+      </div>
+    </div>
+    <div class="debt-prog-legend">"O empréstimo é a compra de um presente pago com o seu futuro. Saiba exatamente o preço."</div>`;
 }
 
 function setStrategy(s) {
@@ -5276,9 +5549,12 @@ function goToResult(section) {
   clearSearch();
   const tab = document.querySelector(`.nav-tab[onclick*="'${section}'"]`);
   showSection(section, tab);
-  // Sync bottom nav
-  document.querySelectorAll('.bottom-nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['centavo','dashboard','diagnostico','orcamento','calendario','dividas','juros','metas','reserva','virtudes','primeirosprincipios','futuro'][i] === section);
+  // Sync bottom nav — lê a seção do onclick de cada botão em vez de manter uma
+  // lista paralela por índice, que saía de sincronia a cada aba nova (Cofre havia
+  // ficado de fora, desalinhando todos os índices seguintes).
+  document.querySelectorAll('.bottom-nav button').forEach(b => {
+    const m = (b.getAttribute('onclick') || '').match(/showSection\('([^']+)'/);
+    b.classList.toggle('active', !!m && m[1] === section);
   });
 }
 
@@ -5822,6 +6098,7 @@ function _ensureDefaults() {
   S.reserva      = S.reserva      || { acumulado: 0, metaCustom: 0, prazo: 12 };
   (S.dividas||[]).forEach(d => { if (d.parcelasPagas === undefined) d.parcelasPagas = 0; });
   S.orcamentoCats= S.orcamentoCats|| {};
+  S.emprestimos  = S.emprestimos  || [];
   S.marcos       = S.marcos       || [];
   S.checkIn      = S.checkIn      || { ultimo: '', streak: 0 };
   S.ritual       = S.ritual       || { ultimo: '', texto: '', streak: 0 };
@@ -5849,14 +6126,14 @@ async function _bootApp() {
   _initBottomNavFade();
   // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
   // showSection também as re-renderiza ao navegar, então nada fica desatualizado.
-  const _renderRestante = () => { renderOrcamento(); renderDividas(); calcJuros(); renderMetas(); renderDados(); };
+  const _renderRestante = () => { renderOrcamento(); renderDividas(); renderEmprestimos(); calcJuros(); renderMetas(); renderDados(); };
   (window.requestIdleCallback || window.requestAnimationFrame)(_renderRestante);
   // 2) NUVEM em segundo plano — não trava a entrada; re-renderiza só se vier algo mais novo.
   setSyncStatus('loading');
   loadFromCloud().then(() => {
     _ensureDefaults();
     if (el && document.activeElement !== el) el.value = S.ativos || 0;
-    renderDashboard(); renderOrcamento(); renderDividas(); calcJuros(); renderMetas(); renderDados();
+    renderDashboard(); renderOrcamento(); renderDividas(); renderEmprestimos(); calcJuros(); renderMetas(); renderDados();
     setupRealtime();
     // Nuvem vazia mas há dados locais → restaura a nuvem automaticamente (protege após 1º uso/limpeza)
     if (_cloudWasEmpty && ((S.receitas||[]).length || (S.despesas||[]).length || (S.dividas||[]).length || (S.contasUrgentes||[]).length)) {

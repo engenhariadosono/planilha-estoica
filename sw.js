@@ -1,4 +1,4 @@
-const CACHE = 'pe-v17';
+const CACHE = 'pe-v18';
 const CDN   = 'pe-cdn-v6';
 const CORE  = ['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-192-maskable.png', '/icon-512-maskable.png'];
 

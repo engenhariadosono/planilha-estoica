@@ -3245,13 +3245,16 @@ async function loadFromCloud() {
       const { _sid, _savedAt, ...cleanData } = data.conteudo_json;
       const cloudSaved = _savedAt || 0;
       const localSaved = parseInt(localStorage.getItem('pe-last-save')||'0', 10);
-      if (cloudSaved >= localSaved) {
-        // Nuvem igual ou mais nova → adota
+      const cloudIntegra = _integridadeOk(cleanData);
+      if (!cloudIntegra) console.warn('[Save] Dados da nuvem com números inválidos — ignorados, mantendo cache local.');
+      if (cloudSaved >= localSaved && cloudIntegra) {
+        // Nuvem igual ou mais nova, e íntegra → adota
         Object.assign(S, cleanData);
         _writeLocal();
       } else {
-        // Cache LOCAL é mais recente (lançamentos ainda não sincronizados) →
-        // mantém o local e reenvia pra nuvem, pra nunca perder dado do usuário.
+        // Cache LOCAL é mais recente (lançamentos ainda não sincronizados), OU
+        // o payload da nuvem tinha número inválido → mantém o local e reenvia,
+        // pra nunca perder ou herdar dado ruim.
         try { const d = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (d) Object.assign(S, d); } catch(e) {}
         setTimeout(syncToCloud, 800);
       }
@@ -3281,8 +3284,13 @@ function setupRealtime() {
         // Ignorar eventos gerados por este próprio dispositivo
         if (data._sid === SESSION_ID) return;
 
-        setSyncStatus('incoming');
         const { _sid, ...cleanData } = data;
+        if (!_integridadeOk(cleanData)) {
+          console.warn('[Realtime] Atualização recebida com números inválidos — ignorada, estado local mantido.');
+          return;
+        }
+
+        setSyncStatus('incoming');
         Object.assign(S, cleanData);
         _writeLocal();
 
@@ -3350,6 +3358,10 @@ let S = {
 //  3) Snapshots diários locais (últimos 14 dias), restauráveis na aba Dados.
 //  4) Guard anti-wipe: nunca sobe estado vazio por cima de dados existentes.
 //  5) Flush imediato em visibilitychange E pagehide (não perde no fechamento).
+//  6) Guard de integridade: dado vindo da nuvem/tempo real com número inválido
+//     (NaN/Infinity/tipo errado) é rejeitado antes de sobrescrever o estado
+//     local — protege contra um dispositivo/atualização com bug contaminar os
+//     outros (ver _integridadeOk, usado em loadFromCloud e no listener realtime).
 const SNAP_KEY = 'pe-snapshots';
 const SNAP_MAX = 14;                 // dias de histórico mantidos
 let _saveTimer = null;
@@ -3372,6 +3384,31 @@ function _contarLancamentos(o) {
          (o.dividas||[]).length  + (o.contasUrgentes||[]).length +
          (o.pagas||[]).length    + (o.marcos||[]).length +
          (o.emprestimos||[]).length;
+}
+
+// Guard de integridade: valida os campos numéricos de um payload vindo da
+// nuvem/tempo real antes de deixá-lo sobrescrever S. Um bug de deploy (ou uma
+// gravação corrompida em outro aparelho) que salve NaN/Infinity/string num
+// campo monetário contaminaria patrimônio, dívidas, reserva etc. neste
+// dispositivo assim que o dado chegasse — aqui ele é rejeitado antes disso.
+function _numOk(v) { return v === undefined || v === null || (typeof v === 'number' && isFinite(v)); }
+function _integridadeOk(o) {
+  if (!o || typeof o !== 'object') return false;
+  const listasComValor = { receitas: 'valor', despesas: 'valor', dividas: 'saldo', pagas: 'saldo', emprestimos: 'valor' };
+  for (const campo in listasComValor) {
+    const arr = o[campo];
+    if (arr === undefined) continue;
+    if (!Array.isArray(arr)) return false;
+    for (const item of arr) {
+      if (!item || typeof item !== 'object' || !_numOk(item[listasComValor[campo]])) return false;
+    }
+  }
+  if (!_numOk(o.ativos)) return false;
+  if (o.reserva !== undefined) {
+    if (!o.reserva || typeof o.reserva !== 'object') return false;
+    if (!_numOk(o.reserva.acumulado) || !_numOk(o.reserva.metaCustom)) return false;
+  }
+  return true;
 }
 
 // Guarda no máx. 1 snapshot por dia (o 1º save do dia) — ponto de restauração.

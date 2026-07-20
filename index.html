@@ -3821,6 +3821,16 @@ const totalEmp  = () => (S.emprestimos || []).reduce((s, e) => s + _empSaldo(e),
 // patrimônio ficava superestimado em todo o saldo dos contratos.
 const patriLiq  = () => (S.ativos || 0) - totalDiv() - totalEmp();
 
+// Reserva de Emergência: meta = valor customizado (S.reserva.metaCustom) ou
+// 12x as despesas mensais quando não definida. Fonte única — Dashboard, o
+// widget "Meta Principal", a aba Futuro e (agora) a aba Metas leem daqui, para
+// não repetir o que já aconteceu: a aba Metas tinha sua própria cópia da conta
+// usando patrimônio líquido em vez do valor acumulado, então mostrava um
+// percentual de reserva diferente do resto do app para o mesmo usuário.
+const reservaMeta = () => (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (totalDesp() > 0 ? totalDesp() * 12 : 0);
+const reservaPct  = () => { const m = reservaMeta(); return m > 0 ? Math.min(100, ((S.reserva?.acumulado || 0) / m) * 100) : 0; };
+const reservaMesesCobertos = () => { const d = totalDesp(); return d > 0 ? (S.reserva?.acumulado || 0) / d : 0; };
+
 // ══════════════════════════════════════════════════
 // ORÇAMENTO
 // ══════════════════════════════════════════════════
@@ -5137,12 +5147,12 @@ function renderDashboard() {
                   : !empAtivos.length ? `<span class="kpi-badge ok">✓ Todos quitados</span>`
                   : `<span class="kpi-badge ${empMensal > desp * 0.3 ? 'bad' : 'warn'}">${fmt(empMensal)}/mês · ${empAtivos.length} ativo${empAtivos.length > 1 ? 's' : ''}</span>`;
 
-  // Reserva de Emergência — mesma fórmula da seção Reserva e do card em Metas:
-  // meta custom, ou 12x as despesas mensais quando não definida.
+  // Reserva de Emergência — fórmula única em reservaMeta()/reservaPct(), para
+  // não divergir do que a aba Metas, o widget "Meta Principal" e Futuro mostram.
   const resAcum  = S.reserva?.acumulado || 0;
-  const resMeta  = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
-  const resPct   = resMeta > 0 ? Math.min(100, (resAcum / resMeta) * 100) : 0;
-  const resMeses = desp > 0 ? resAcum / desp : 0;
+  const resMeta  = reservaMeta();
+  const resPct   = reservaPct();
+  const resMeses = reservaMesesCobertos();
   const badgeRes = resMeta === 0   ? `<span class="kpi-badge warn">— Lance suas despesas</span>`
                  : resPct >= 100   ? `<span class="kpi-badge ok">✓ Meta atingida</span>`
                  : `<span class="kpi-badge ${resMeses >= 6 ? 'ok' : resMeses >= 3 ? 'warn' : 'bad'}">${resMeses.toFixed(1)} ${resMeses === 1 ? 'mês coberto' : 'meses cobertos'}</span>`;
@@ -5260,12 +5270,12 @@ function renderMetaPrincipalWidget() {
       </div>`;
   } else {
     const acum   = S.reserva?.acumulado || 0;
-    const meta   = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
+    const meta   = reservaMeta();
     if (!(meta > 0)) {
       body.innerHTML = `<div class="info-box">Registre suas despesas ou defina uma meta manual na aba Reserva.</div>`;
       return;
     }
-    const pct = Math.min(100, (acum / meta) * 100);
+    const pct = reservaPct();
     const cor = pct >= 100 ? 'var(--green)' : 'var(--gold)';
     body.innerHTML = `
       <div style="text-align:center;margin-bottom:10px">
@@ -5452,26 +5462,31 @@ function renderMetas() {
       </button>
     </div>`;
 
-  // ── Reserva de Emergência: desp × 12 ──────────────────────────
-  if (!despValida) {
+  // ── Reserva de Emergência: valor acumulado (S.reserva.acumulado) sobre a
+  // meta — mesma fórmula de Dashboard/Reserva/Futuro (reservaMeta/reservaPct).
+  // Antes este card usava patrimônio líquido, que é uma conta diferente (inclui
+  // ativos e desconta dívidas/empréstimos) e por isso mostrava um percentual de
+  // reserva divergente do resto do app para o mesmo usuário.
+  const resAcumMetas = S.reserva?.acumulado || 0;
+  if (!despValida && !(S.reserva?.metaCustom > 0)) {
     document.getElementById('cardReserva').innerHTML = _cardBloqueado('a Reserva de Emergência');
   } else {
-    const metaRes  = despAnual;           // desp × 12
-    const pctRes   = Math.min(100, (patLiq / metaRes) * 100);
-    const faltaRes = Math.max(0, metaRes - patLiq);
+    const metaRes  = reservaMeta();
+    const pctRes   = reservaPct();
+    const faltaRes = Math.max(0, metaRes - resAcumMetas);
     document.getElementById('cardReserva').innerHTML = `
       <div style="text-align:center;margin-bottom:14px">
         <div style="font-size:28px;font-weight:800;color:${pctRes>=100?'var(--green)':'var(--gold)'}">${fmtP(pctRes)}</div>
-        <div style="font-size:12px;color:var(--text3)">Meta: ${fmt(metaRes)} (12× despesas mensais)</div>
+        <div style="font-size:12px;color:var(--text3)">Meta: ${fmt(metaRes)} ${S.reserva?.metaCustom > 0 ? '(manual)' : '(12× despesas mensais)'}</div>
       </div>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pctRes}%;background:${pctRes>=100?'var(--green)':'var(--gold)'}"></div></div>
       <div style="margin-top:10px;font-size:12px;color:var(--text3)">
         ${pctRes>=100
           ? '✅ Reserva completa! Foque em investimentos de longo prazo.'
-          : `Faltam <strong style="color:var(--text)">${fmt(faltaRes)}</strong> para 12 meses de cobertura.`}
+          : `Faltam <strong style="color:var(--text)">${fmt(faltaRes)}</strong> para completar a reserva.`}
       </div>
       <div class="info-box" style="margin-top:10px"><strong>Princípio:</strong> "A reserva é o escudo do guerreiro contra a incerteza." — Sêneca</div>
-      <div class="sync-note">${catLabel} no Orçamento · <strong>${despLabel}</strong>/mês → meta de ${fmt(metaRes)}</div>`;
+      <div class="sync-note">${resAcumMetas>0?fmt(resAcumMetas)+' acumulados':catLabel+' no Orçamento'} · <strong>${despLabel}</strong>/mês → meta de ${fmt(metaRes)}</div>`;
   }
 
   // ── Número FIRE: desp × 12 × 25 ───────────────────────────────
@@ -7471,8 +7486,8 @@ function renderFuturo() {
       pct   = meta>0 ? Math.min((atual/meta)*100,100) : (totalDiv()===0?100:0);
     } else if (m.auto==='reserva') {
       atual = S.reserva?.acumulado || 0;
-      meta  = (S.reserva?.metaCustom>0 ? S.reserva.metaCustom : totalDesp()*12) || 0;
-      pct   = meta>0 ? Math.min((atual/meta)*100,100) : 0;
+      meta  = reservaMeta();
+      pct   = reservaPct();
     } else {
       atual = m.atual || 0;
       meta  = m.valor || 0;

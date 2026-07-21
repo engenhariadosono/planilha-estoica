@@ -2158,16 +2158,20 @@ input:focus, select:focus {
   filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 22px var(--blue)) drop-shadow(0 0 48px var(--blue));
 }
 .lightning-bolt path { fill: #f3f6ff; }
-.lightning-flash.strike { animation: lightningStrike 0.9s ease-out; }
-@keyframes lightningStrike {
+/* Aparece, dá um giro completo, some. Contêiner cuida do fade in/out;
+   o próprio bolt gira 360° por cima, mesma duração das duas animações. */
+.lightning-flash.strike { animation: lightningFade 1.5s ease-in-out; }
+@keyframes lightningFade {
   0%   { opacity: 0; }
-  4%   { opacity: 1; }
-  9%   { opacity: 0.12; }
-  13%  { opacity: 0.85; }
-  19%  { opacity: 0; }
-  24%  { opacity: 0.55; }
-  32%  { opacity: 0; }
+  18%  { opacity: 1; }
+  78%  { opacity: 1; }
   100% { opacity: 0; }
+}
+.lightning-flash.strike .lightning-bolt { animation: lightningSpin 1.5s cubic-bezier(0.4,0,0.2,1); }
+@keyframes lightningSpin {
+  0%   { transform: rotate(0deg) scale(0.7); }
+  18%  { transform: rotate(70deg) scale(1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 /* ─── reduced-motion: respeitar preferência ─── */
@@ -2176,7 +2180,7 @@ input:focus, select:focus {
   .pe-ripple, .empty-state .icon,
   .badge-green, .debt-avista, .meter-fill,
   .ico-float, .stoic-ornament-center, .stoic-card::after, .nav-brand-glyph,
-  .nav-header::before, .nav-header::after, .lightning-flash.strike {
+  .nav-header::before, .nav-header::after, .lightning-flash.strike, .lightning-flash.strike .lightning-bolt {
     animation: none !important;
     transition: none !important;
   }
@@ -2842,7 +2846,7 @@ input:focus, select:focus {
       <div class="card-title">Patrimônio Declarado</div>
       <div class="form-group" style="margin-bottom:14px">
         <label>Total de Ativos (R$)</label>
-        <input type="number" id="metaAtivos" value="0" min="0" oninput="S.ativos=parseFloat(this.value)||0; save(); renderMetas()">
+        <input type="number" id="metaAtivos" value="0" min="0" oninput="_onAtivosInput(this.value)">
       </div>
       <div id="cardPatrimonio"></div>
     </div>
@@ -3592,13 +3596,19 @@ function _integridadeOk(o) {
 }
 
 // Guarda no máx. 1 snapshot por dia (o 1º save do dia) — ponto de restauração.
+// _ultimoDiaSnapshot é um cache em memória do "já tenho o snapshot de hoje?":
+// sem ele, TODO save() (ou seja, toda ação do usuário) reparseava do zero até
+// 14 clones completos do estado guardados no localStorage só pra checar uma
+// data — pesado à toa depois do primeiro save do dia.
+let _ultimoDiaSnapshot = null;
 function _snapshotDiario() {
   try {
     if (_contarLancamentos(S) === 0) return;    // não arquiva estado vazio
     const dia = todayISO();
+    if (_ultimoDiaSnapshot === dia) return;      // já conferimos hoje — não reler localStorage
     let arr = [];
     try { arr = JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch(e) {}
-    if (arr.some(s => s.dia === dia)) return;    // já existe o ponto de hoje
+    if (arr.some(s => s.dia === dia)) { _ultimoDiaSnapshot = dia; return; }    // já existe o ponto de hoje
     arr.push({
       dia, t: Date.now(),
       resumo: { rec:(S.receitas||[]).length, desp:(S.despesas||[]).length,
@@ -3608,6 +3618,7 @@ function _snapshotDiario() {
     arr.sort((a,b) => a.t - b.t);
     if (arr.length > SNAP_MAX) arr = arr.slice(-SNAP_MAX);
     localStorage.setItem(SNAP_KEY, JSON.stringify(arr));
+    _ultimoDiaSnapshot = dia;
   } catch(e) { /* localStorage cheio → ignora, sem travar o app */ }
 }
 
@@ -3624,6 +3635,18 @@ function save() {
   _snapshotDiario();
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(syncToCloud, 600);
+}
+
+// Campo "Ativos" (oninput, não onchange — atualiza os widgets à medida que
+// digita). Antes chamava save()+renderMetas() a CADA tecla: JSON.stringify()
+// do estado inteiro + rebuild completo da aba Metas por dígito digitado,
+// perceptível como travada ao digitar um valor grande. Só o valor em S
+// atualiza na hora (barato); save/render esperam uma pausa na digitação.
+let _ativosInputTimer = null;
+function _onAtivosInput(val) {
+  S.ativos = parseFloat(val) || 0;
+  clearTimeout(_ativosInputTimer);
+  _ativosInputTimer = setTimeout(() => { save(); renderMetas(); }, 400);
 }
 
 // Watchdog: rede de segurança contra qualquer mutação de S que não chamou
@@ -4007,6 +4030,10 @@ function showSection(id, btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('s-' + id).classList.add('active');
   if (btn) { btn.classList.add('active'); _scrollTabToView(btn); }
+  // O ticker da Taxa de Queima (1x/s) só faz sentido com o Dashboard visível
+  // — sem isso, ele ficava rodando pro resto da sessão inteira mesmo depois
+  // do usuário sair da aba, recalculando totalDesp() a cada segundo à toa.
+  if (id !== 'dashboard' && _burnRateInterval) { clearInterval(_burnRateInterval); _burnRateInterval = null; }
   if (id === 'dashboard')  renderDashboard();
   if (id === 'orcamento')  renderOrcamento();
   if (id === 'calendario') renderCalendario();
@@ -7971,12 +7998,18 @@ function toggleMarco(id) {
   if (arr) arr.textContent = exp ? '⌄' : '›';
 }
 
+// Mesmo problema do campo "Ativos" (ver _onAtivosInput): oninput dispara a
+// cada tecla nos campos de valor/atual de cada marco. Debounce evita
+// save()+renderFuturo() (JSON.stringify do estado inteiro + rebuild da aba)
+// por dígito digitado.
+let _marcoInputTimer = null;
 function updateMarco(id, field, val) {
   if (!S.marcos) S.marcos = [];
   let m = S.marcos.find(x=>x.id===id);
   if (!m) { m={id}; S.marcos.push(m); }
   m[field] = field==='dataAlvo' ? val : (parseFloat(val)||0);
-  save(); renderFuturo();
+  clearTimeout(_marcoInputTimer);
+  _marcoInputTimer = setTimeout(() => { save(); renderFuturo(); }, 400);
 }
 
 function addMarco() {

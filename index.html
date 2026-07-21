@@ -557,6 +557,13 @@ select option { background: var(--surface2); }
 #s-reserva   .section-title { background: linear-gradient(135deg, #DAD5CB, var(--gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 #s-virtudes  .section-title { background: linear-gradient(135deg, #7AE8A0, var(--green)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 #s-futuro    .section-title { background: linear-gradient(135deg, #DAD5CB, #C07030); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-calendario .section-title { background: linear-gradient(135deg, #9AB0D8, var(--blue));  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-emprestimos .section-title { background: linear-gradient(135deg, #E8A06A, #C0782A);      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-centavo   .section-title { background: linear-gradient(135deg, #F0D080, var(--gold));    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-cofre     .section-title { background: linear-gradient(135deg, #7AE8A0, var(--green));   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-primeirosprincipios .section-title { background: linear-gradient(135deg, #E8B980, #C07030); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-diagnostico .section-title { background: linear-gradient(135deg, #C0A0E8, #9A7ACA);      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+#s-dados     .section-title { background: linear-gradient(135deg, #DAD5CB, var(--text3));   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* ─── TOGGLE ─── */
 .toggle-group { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
@@ -2042,11 +2049,59 @@ input:focus, select:focus {
   backdrop-filter: blur(2px);
 }
 
+/* ─── 26. TOQUES VIBRANTES — ícones flutuantes, ornamento cintilante, aura do hero ─── */
+/* Ícone flutuante genérico: o emoji de cada título de seção é envolvido num
+   <span class="ico-float"> via _ativarIconesFlutuantes() (ver JS) e ganha um
+   balanço sutil — dá vida ao topo de cada aba sem exigir marcação nova em
+   cada uma das 14 seções. */
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-4px) rotate(-4deg); }
+}
+.ico-float { display: inline-block; animation: iconFloat 3.4s ease-in-out infinite; }
+.ico-float:nth-of-type(2n) { animation-delay: -1.1s; }
+
+/* Estrelas do stoic-card (✦ ✦ ✦): cintilam com um degradê que percorre o
+   texto, misturando dourado e azul — os mesmos tons já usados no glifo da
+   marca e no card do Orçamento, então não introduz cor nova ao app. */
+.stoic-ornament { text-align: center; margin-bottom: 8px; }
+.stoic-ornament-center {
+  display: inline-block; font-size: 13px; letter-spacing: 7px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright), var(--blue), var(--gold-bright), var(--gold-dim));
+  background-size: 220% auto;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: ornamentoShimmer 5s ease-in-out infinite;
+}
+@keyframes ornamentoShimmer {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
+
+/* Aura do card estoico (citação no topo do Dashboard) — a primeira coisa que
+   o usuário vê. O ::after já existente ganha deriva lenta em vez de ficar
+   estático, com um leve tom de verde entrando na mistura dourado/azul. */
+.stoic-card::after { animation: stoicAuraDrift 9s ease-in-out infinite; }
+@keyframes stoicAuraDrift {
+  0%, 100%  { transform: translate(0,0) scale(1); opacity: 0.85; }
+  50%       { transform: translate(-16px,-12px) scale(1.18); opacity: 1; }
+}
+
+/* Glifo da marca na barra superior: brilho pulsante + flutuação leve —
+   reaproveita o próprio ico-float, só ajustando a amplitude pro tamanho menor. */
+.nav-brand-glyph {
+  display: inline-flex; animation: iconFloat 4.2s ease-in-out infinite, navGlyphGlow 3.2s ease-in-out infinite;
+}
+@keyframes navGlyphGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(168,161,151,0.4)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(168,161,151,0.75)); }
+}
+
 /* ─── reduced-motion: respeitar preferência ─── */
 @media (prefers-reduced-motion: reduce) {
   .section, .kpi-card, .data-table tbody tr,
   .pe-ripple, .empty-state .icon,
-  .badge-green, .debt-avista, .meter-fill {
+  .badge-green, .debt-avista, .meter-fill,
+  .ico-float, .stoic-ornament-center, .stoic-card::after, .nav-brand-glyph {
     animation: none !important;
     transition: none !important;
   }
@@ -2159,7 +2214,7 @@ input:focus, select:focus {
 <!-- ═══ NAVIGATION ═══ -->
 <header class="nav-header">
   <div class="nav-brand" onclick="showGatekeeper()" style="cursor:pointer" title="Bloquear / Autenticar">
-    <span style="font-size:20px;line-height:1;filter:drop-shadow(0 0 8px rgba(168,161,151,0.5))"><svg viewBox="0 0 100 100" style="width:22px;height:22px;vertical-align:middle"><use href="#brandGlyph"/></svg></span>
+    <span class="nav-brand-glyph" style="font-size:20px;line-height:1"><svg viewBox="0 0 100 100" style="width:22px;height:22px;vertical-align:middle"><use href="#brandGlyph"/></svg></span>
     <span>Planilha Estoica<span> · Crescimento & Liberdade</span></span>
   </div>
   <div class="nav-tabs-dock">
@@ -5882,6 +5937,22 @@ function goToResult(section) {
 
 // Régua de abas: mostra a sombra à direita enquanto houver aba fora de vista e
 // mantém a aba ativa visível ao navegar (senão a seção atual some da régua).
+// Envolve o emoji inicial de cada título de seção num <span class="ico-float">
+// (animação em CSS) — roda uma única vez, os 14 títulos já existem no DOM
+// desde o parse do HTML (as seções só ficam escondidas via display:none, não
+// são recriadas ao navegar). Puramente decorativo: não toca em nenhum valor
+// financeiro nem depende de S.
+function _ativarIconesFlutuantes() {
+  document.querySelectorAll('.section-title').forEach(el => {
+    if (el.querySelector('.ico-float')) return;
+    const texto = el.textContent;
+    const m = texto.match(/^(\S+)\s*/);
+    if (!m) return;
+    const emoji = m[1];
+    el.innerHTML = `<span class="ico-float">${emoji}</span>` + texto.slice(emoji.length);
+  });
+}
+
 function _initNavTabsScroll() {
   const dock = document.querySelector('.nav-tabs-dock');
   const tabs = document.querySelector('.nav-tabs');
@@ -6479,7 +6550,7 @@ async function _bootApp() {
   renderDashboard();
   initFocus(); _initDateDefaults(); _popularSubcatSelect();
   _triggerRitual(); _triggerCheckin();
-  _initBottomNavFade(); _initNavTabsScroll();
+  _initBottomNavFade(); _initNavTabsScroll(); _ativarIconesFlutuantes();
   // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
   // showSection também as re-renderiza ao navegar, então nada fica desatualizado.
   const _renderRestante = () => { renderOrcamento(); renderDividas(); renderEmprestimos(); calcJuros(); renderMetas(); renderDados(); };

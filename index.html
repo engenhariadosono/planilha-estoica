@@ -2526,10 +2526,12 @@ input:focus, select:focus {
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
         <button class="ocr-scan-btn" onclick="openOcrScanner()">📷 Escanear Nota Fiscal</button>
         <button class="import-trigger-btn" onclick="openImportModal()">📂 Importar Extrato</button>
+        <button class="import-trigger-btn" onclick="openImportImageModal()">📸 Print do Extrato</button>
         <button class="voice-btn" id="voiceBtn" onclick="openVoiceModal()">🎤 Falar</button>
       </div>
       <input type="file" id="ocrFileInput" accept="image/*" capture="environment" style="display:none" onchange="processOcrImage(this.files[0])">
       <input type="file" id="importFileInput" accept=".csv,.ofx,.txt" style="display:none" onchange="processImportFile(this.files[0])">
+      <input type="file" id="importImageInput" accept="image/*,.pdf" style="display:none" onchange="processImportImage(this.files[0])">
       <div class="txn-filter-bar" id="filterBarDesp" style="margin-top:12px">
         <button class="txn-filter-btn active" onclick="setTxnFilter('desp','recentes',this)">Recentes</button>
         <button class="txn-filter-btn" onclick="setTxnFilter('desp','mes',this)">Este Mês</button>
@@ -6779,6 +6781,23 @@ function openImportModal() {
   inp.click();
 }
 
+// Aplica as linhas já normalizadas ({data, desc, valor, tipo}) na mesma
+// régua de revisão usada por CSV/OFX e pelo print do extrato — fonte única
+// de categorização automática, detecção de duplicata e resumo.
+function _aplicarLinhasImportadas(parsed) {
+  _importRows = parsed.map(r => {
+    const tipo = r.tipo || 'desp';
+    const dup  = _importIsDup(r, tipo);
+    return { ...r, tipo, cat: tipo==='rec' ? '' : _autoCateg(r.desc), dup, incluir: !dup };
+  });
+  _renderImportTable();
+  document.getElementById('importLoading').style.display  = 'none';
+  document.getElementById('importReview').style.display   = 'block';
+  document.getElementById('importSummary').style.display  = 'flex';
+  document.getElementById('importActions').style.display  = 'flex';
+  _renderImportSummary();
+}
+
 async function processImportFile(file) {
   if (!file) return;
   const modal = document.getElementById('importModal');
@@ -6803,19 +6822,60 @@ async function processImportFile(file) {
       setTimeout(closeImportModal, 2800);
       return;
     }
-    _importRows = parsed.map(r => {
-      const tipo = r.tipo || 'desp';
-      const dup  = _importIsDup(r, tipo);
-      return { ...r, tipo, cat: tipo==='rec' ? '' : _autoCateg(r.desc), dup, incluir: !dup };
-    });
-    _renderImportTable();
-    document.getElementById('importLoading').style.display  = 'none';
-    document.getElementById('importReview').style.display   = 'block';
-    document.getElementById('importSummary').style.display  = 'flex';
-    document.getElementById('importActions').style.display  = 'flex';
-    _renderImportSummary();
+    _aplicarLinhasImportadas(parsed);
   } catch(_) {
     document.getElementById('importLoadingMsg').textContent = '⚠️ Erro ao processar arquivo. Tente outro formato.';
+    setTimeout(closeImportModal, 2800);
+  }
+}
+
+function openImportImageModal() {
+  const inp = document.getElementById('importImageInput');
+  inp.value = '';
+  inp.click();
+}
+
+// Print (ou PDF) de extrato bancário: manda pro endpoint de IA
+// (api/extrato-imagem.js), que devolve as transações já normalizadas no
+// mesmo formato {data, desc, valor, tipo} do import de CSV/OFX — cai na
+// mesma régua de revisão via _aplicarLinhasImportadas. Nada é salvo sem
+// você revisar e confirmar cada linha.
+async function processImportImage(file) {
+  if (!file) return;
+  const modal = document.getElementById('importModal');
+  document.getElementById('importSub').textContent = 'Nenhuma transação é salva sem sua revisão e aprovação';
+  document.getElementById('importLoading').style.display = 'flex';
+  document.getElementById('importLoadingMsg').textContent = 'Lendo o print do extrato…';
+  document.getElementById('importReview').style.display  = 'none';
+  document.getElementById('importSummary').style.display = 'none';
+  document.getElementById('importActions').style.display = 'none';
+  modal.classList.add('open');
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const resp = await fetch('/api/extrato-imagem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64, mediaType: file.type || 'image/jpeg' }),
+    });
+    const json = await resp.json();
+    if (!resp.ok || !json.ok) {
+      document.getElementById('importLoadingMsg').textContent = '⚠️ ' + (json.error || 'Não consegui ler o print. Tente uma imagem mais nítida.');
+      setTimeout(closeImportModal, 2800);
+      return;
+    }
+    if (!json.transacoes || json.transacoes.length === 0) {
+      document.getElementById('importLoadingMsg').textContent = '⚠️ Nenhuma transação reconhecida nesse print.';
+      setTimeout(closeImportModal, 2800);
+      return;
+    }
+    _aplicarLinhasImportadas(json.transacoes);
+  } catch(_) {
+    document.getElementById('importLoadingMsg').textContent = '⚠️ Erro ao enviar o print. Tente novamente.';
     setTimeout(closeImportModal, 2800);
   }
 }

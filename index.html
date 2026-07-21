@@ -2128,13 +2128,46 @@ input:focus, select:focus {
   to   { -webkit-mask-position-x: -220px; mask-position-x: -220px; }
 }
 
+/* ─── 28. RAIO PERIÓDICO — flash no centro da tela ─── */
+/* Overlay fixo, sempre presente no DOM mas invisível (opacity:0) até ganhar
+   a classe .strike via _ativarRaioPeriodico() (JS). pointer-events:none em
+   todas as camadas para nunca interceptar clique/toque no app por baixo. */
+.lightning-flash {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 9998;
+  opacity: 0;
+}
+.lightning-flash::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(140,180,255,0.16), transparent 60%);
+}
+.lightning-bolt {
+  position: relative;
+  width: min(28vw, 150px); height: auto;
+  filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 22px var(--blue)) drop-shadow(0 0 48px var(--blue));
+}
+.lightning-bolt path { fill: #f3f6ff; }
+.lightning-flash.strike { animation: lightningStrike 0.9s ease-out; }
+@keyframes lightningStrike {
+  0%   { opacity: 0; }
+  4%   { opacity: 1; }
+  9%   { opacity: 0.12; }
+  13%  { opacity: 0.85; }
+  19%  { opacity: 0; }
+  24%  { opacity: 0.55; }
+  32%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
 /* ─── reduced-motion: respeitar preferência ─── */
 @media (prefers-reduced-motion: reduce) {
   .section, .kpi-card, .data-table tbody tr,
   .pe-ripple, .empty-state .icon,
   .badge-green, .debt-avista, .meter-fill,
   .ico-float, .stoic-ornament-center, .stoic-card::after, .nav-brand-glyph,
-  .nav-header::before, .nav-header::after {
+  .nav-header::before, .nav-header::after, .lightning-flash.strike {
     animation: none !important;
     transition: none !important;
   }
@@ -2242,6 +2275,11 @@ input:focus, select:focus {
       </div>
     </div>
   </div>
+</div>
+
+<!-- Raio decorativo — flash periódico no centro da tela (ver _ativarRaioPeriodico) -->
+<div class="lightning-flash" id="lightningFlash" aria-hidden="true">
+  <svg class="lightning-bolt" viewBox="0 0 120 220"><path d="M62 0 L28 100 L52 100 L38 220 L96 88 L66 88 Z"/></svg>
 </div>
 
 <!-- ═══ NAVIGATION ═══ -->
@@ -5977,6 +6015,24 @@ function goToResult(section) {
 // desde o parse do HTML (as seções só ficam escondidas via display:none, não
 // são recriadas ao navegar). Puramente decorativo: não toca em nenhum valor
 // financeiro nem depende de S.
+// Raio decorativo no centro da tela: dispara um flash rápido em intervalos
+// aleatórios (22–40s) via setTimeout recursivo (evita cadência mecânica de
+// setInterval). Puramente visual — pointer-events:none, não intercepta clique.
+function _dispararRaio() {
+  const el = document.getElementById('lightningFlash');
+  if (!el) return;
+  el.classList.remove('strike');
+  void el.offsetWidth; // força reflow p/ reiniciar a animação mesmo se já rodou
+  el.classList.add('strike');
+}
+function _ativarRaioPeriodico() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const agendar = () => {
+    setTimeout(() => { _dispararRaio(); agendar(); }, 22000 + Math.random() * 18000);
+  };
+  agendar();
+}
+
 function _ativarIconesFlutuantes() {
   document.querySelectorAll('.section-title').forEach(el => {
     if (el.querySelector('.ico-float')) return;
@@ -6585,7 +6641,7 @@ async function _bootApp() {
   renderDashboard();
   initFocus(); _initDateDefaults(); _popularSubcatSelect();
   _triggerRitual(); _triggerCheckin();
-  _initBottomNavFade(); _initNavTabsScroll(); _ativarIconesFlutuantes();
+  _initBottomNavFade(); _initNavTabsScroll(); _ativarIconesFlutuantes(); _ativarRaioPeriodico();
   // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
   // showSection também as re-renderiza ao navegar, então nada fica desatualizado.
   const _renderRestante = () => { renderOrcamento(); renderDividas(); renderEmprestimos(); calcJuros(); renderMetas(); renderDados(); };

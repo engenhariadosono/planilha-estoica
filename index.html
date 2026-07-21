@@ -322,6 +322,38 @@ body {
 .data-table tr:hover td { background: rgba(168,161,151,0.03); }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
+/* ─── DESPESAS: régua de categorias com subcategoria ─── */
+.cat-group-row { cursor: pointer; user-select: none; }
+.cat-group-row td { background: rgba(168,161,151,0.03); font-weight: 700; }
+.cat-group-row:hover td { background: rgba(168,161,151,0.06); }
+.cat-group-header { display: flex; align-items: center; gap: 8px; }
+.cat-group-arrow { display: inline-block; font-size: 13px; color: var(--text3); transition: transform 0.2s ease; }
+.cat-group-arrow.aberto { transform: rotate(90deg); }
+.cat-group-nome { font-size: 12.5px; }
+.cat-group-count { font-size: 10.5px; font-weight: 600; color: var(--text3); background: rgba(168,161,151,0.08); border-radius: 100px; padding: 1px 7px; }
+.cat-group-manage {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 13px; padding: 2px 4px; border-radius: 6px; line-height: 1;
+}
+.cat-group-manage:hover { color: var(--text); background: rgba(168,161,151,0.1); }
+.cat-item-row td:first-child { padding-left: 30px; }
+.cat-item-row td { font-size: 12.5px; }
+.subcat-badge {
+  margin-left: 7px; background: rgba(168,161,151,0.1); color: var(--text3);
+  font-weight: 600; font-size: 9.5px; vertical-align: 1px;
+}
+.cat-manage-row td { background: rgba(168,161,151,0.02); padding: 12px 12px 14px 30px; }
+.cat-manage-panel { display: flex; flex-direction: column; gap: 10px; }
+.cat-manage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.subcat-chip { background: rgba(168,161,151,0.1); color: var(--text2); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.subcat-chip button {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 12px; padding: 0; line-height: 1;
+}
+.subcat-chip button:hover { color: var(--red); }
+.cat-manage-add { display: flex; gap: 8px; }
+.cat-manage-add input { flex: 1; font-size: 12.5px; padding: 7px 10px; }
+
 /* ─── FORMS ─── */
 .form-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: flex-end; }
 .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 110px; }
@@ -2411,9 +2443,9 @@ input:focus, select:focus {
     <div class="card">
       <div class="card-title">Despesas <span class="hl-red" id="lblTotalDespesas">R$ 0</span></div>
       <div class="form-row">
-        <div class="form-group"><label>Compromisso</label><input type="text" id="despDesc" placeholder="Ex: Moradia, Alimentação"></div>
+        <div class="form-group"><label>Compromisso</label><input type="text" id="despDesc" placeholder="Ex: Sabesp, Uber"></div>
         <div class="form-group" style="max-width:130px"><label>Natureza</label>
-          <select id="despCat">
+          <select id="despCat" onchange="_popularSubcatSelect()">
             <option value="Moradia">🏠 Moradia</option>
             <option value="Alimentação">🍽️ Alimentação</option>
             <option value="Transporte">🚗 Transporte</option>
@@ -2425,9 +2457,16 @@ input:focus, select:focus {
             <option value="Outros">📦 Outros</option>
           </select>
         </div>
+        <div class="form-group" style="max-width:150px"><label>Subcategoria</label>
+          <select id="despSub" onchange="_onDespSubSelectChange()"></select>
+        </div>
         <div class="form-group" style="max-width:130px"><label>Valor</label><input type="number" id="despVal" placeholder="0,00" min="0"></div>
         <div class="form-group" style="max-width:148px"><label>Data</label><input type="date" id="despData"></div>
         <div class="form-group" style="max-width:72px"><label>&nbsp;</label><button class="btn btn-primary btn-sm" onclick="addDespesa()">Registrar</button></div>
+      </div>
+      <div class="form-row" id="despSubNovaRow" style="display:none">
+        <div class="form-group"><label>Nome da nova subcategoria</label><input type="text" id="despSubNovaInput" placeholder="Ex: Sabesp (água), Luz, Condomínio Vila Nova"></div>
+        <div class="form-group" style="max-width:110px"><label>&nbsp;</label><button class="btn btn-sm" onclick="_confirmarNovaSubcat()">Adicionar</button></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
         <button class="ocr-scan-btn" onclick="openOcrScanner()">📷 Escanear Nota Fiscal</button>
@@ -2446,7 +2485,7 @@ input:focus, select:focus {
         </div>
       </div>
       <table class="data-table">
-        <thead><tr><th>Compromisso</th><th>Natureza</th><th class="txn-date">Data</th><th class="num">Valor</th><th></th></tr></thead>
+        <thead><tr><th>Compromisso</th><th class="txn-date">Data</th><th class="num">Valor</th><th></th></tr></thead>
         <tbody id="bodyDespesas"></tbody>
       </table>
     </div>
@@ -3245,13 +3284,16 @@ async function loadFromCloud() {
       const { _sid, _savedAt, ...cleanData } = data.conteudo_json;
       const cloudSaved = _savedAt || 0;
       const localSaved = parseInt(localStorage.getItem('pe-last-save')||'0', 10);
-      if (cloudSaved >= localSaved) {
-        // Nuvem igual ou mais nova → adota
+      const cloudIntegra = _integridadeOk(cleanData);
+      if (!cloudIntegra) console.warn('[Save] Dados da nuvem com números inválidos — ignorados, mantendo cache local.');
+      if (cloudSaved >= localSaved && cloudIntegra) {
+        // Nuvem igual ou mais nova, e íntegra → adota
         Object.assign(S, cleanData);
         _writeLocal();
       } else {
-        // Cache LOCAL é mais recente (lançamentos ainda não sincronizados) →
-        // mantém o local e reenvia pra nuvem, pra nunca perder dado do usuário.
+        // Cache LOCAL é mais recente (lançamentos ainda não sincronizados), OU
+        // o payload da nuvem tinha número inválido → mantém o local e reenvia,
+        // pra nunca perder ou herdar dado ruim.
         try { const d = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (d) Object.assign(S, d); } catch(e) {}
         setTimeout(syncToCloud, 800);
       }
@@ -3281,8 +3323,13 @@ function setupRealtime() {
         // Ignorar eventos gerados por este próprio dispositivo
         if (data._sid === SESSION_ID) return;
 
-        setSyncStatus('incoming');
         const { _sid, ...cleanData } = data;
+        if (!_integridadeOk(cleanData)) {
+          console.warn('[Realtime] Atualização recebida com números inválidos — ignorada, estado local mantido.');
+          return;
+        }
+
+        setSyncStatus('incoming');
         Object.assign(S, cleanData);
         _writeLocal();
 
@@ -3330,6 +3377,7 @@ let S = {
   strategy: 'avalanche', ativos: 0,
   reserva: { acumulado: 0, metaCustom: 0, prazo: 12 },
   orcamentoCats: {},
+  subcategorias: {},
   marcos: [],
   checkIn: { ultimo: '', streak: 0 },
   ritual: { ultimo: '', texto: '', streak: 0 },
@@ -3350,6 +3398,10 @@ let S = {
 //  3) Snapshots diários locais (últimos 14 dias), restauráveis na aba Dados.
 //  4) Guard anti-wipe: nunca sobe estado vazio por cima de dados existentes.
 //  5) Flush imediato em visibilitychange E pagehide (não perde no fechamento).
+//  6) Guard de integridade: dado vindo da nuvem/tempo real com número inválido
+//     (NaN/Infinity/tipo errado) é rejeitado antes de sobrescrever o estado
+//     local — protege contra um dispositivo/atualização com bug contaminar os
+//     outros (ver _integridadeOk, usado em loadFromCloud e no listener realtime).
 const SNAP_KEY = 'pe-snapshots';
 const SNAP_MAX = 14;                 // dias de histórico mantidos
 let _saveTimer = null;
@@ -3372,6 +3424,31 @@ function _contarLancamentos(o) {
          (o.dividas||[]).length  + (o.contasUrgentes||[]).length +
          (o.pagas||[]).length    + (o.marcos||[]).length +
          (o.emprestimos||[]).length;
+}
+
+// Guard de integridade: valida os campos numéricos de um payload vindo da
+// nuvem/tempo real antes de deixá-lo sobrescrever S. Um bug de deploy (ou uma
+// gravação corrompida em outro aparelho) que salve NaN/Infinity/string num
+// campo monetário contaminaria patrimônio, dívidas, reserva etc. neste
+// dispositivo assim que o dado chegasse — aqui ele é rejeitado antes disso.
+function _numOk(v) { return v === undefined || v === null || (typeof v === 'number' && isFinite(v)); }
+function _integridadeOk(o) {
+  if (!o || typeof o !== 'object') return false;
+  const listasComValor = { receitas: 'valor', despesas: 'valor', dividas: 'saldo', pagas: 'saldo', emprestimos: 'valor' };
+  for (const campo in listasComValor) {
+    const arr = o[campo];
+    if (arr === undefined) continue;
+    if (!Array.isArray(arr)) return false;
+    for (const item of arr) {
+      if (!item || typeof item !== 'object' || !_numOk(item[listasComValor[campo]])) return false;
+    }
+  }
+  if (!_numOk(o.ativos)) return false;
+  if (o.reserva !== undefined) {
+    if (!o.reserva || typeof o.reserva !== 'object') return false;
+    if (!_numOk(o.reserva.acumulado) || !_numOk(o.reserva.metaCustom)) return false;
+  }
+  return true;
 }
 
 // Guarda no máx. 1 snapshot por dia (o 1º save do dia) — ponto de restauração.
@@ -3821,6 +3898,16 @@ const totalEmp  = () => (S.emprestimos || []).reduce((s, e) => s + _empSaldo(e),
 // patrimônio ficava superestimado em todo o saldo dos contratos.
 const patriLiq  = () => (S.ativos || 0) - totalDiv() - totalEmp();
 
+// Reserva de Emergência: meta = valor customizado (S.reserva.metaCustom) ou
+// 12x as despesas mensais quando não definida. Fonte única — Dashboard, o
+// widget "Meta Principal", a aba Futuro e (agora) a aba Metas leem daqui, para
+// não repetir o que já aconteceu: a aba Metas tinha sua própria cópia da conta
+// usando patrimônio líquido em vez do valor acumulado, então mostrava um
+// percentual de reserva diferente do resto do app para o mesmo usuário.
+const reservaMeta = () => (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (totalDesp() > 0 ? totalDesp() * 12 : 0);
+const reservaPct  = () => { const m = reservaMeta(); return m > 0 ? Math.min(100, ((S.reserva?.acumulado || 0) / m) * 100) : 0; };
+const reservaMesesCobertos = () => { const d = totalDesp(); return d > 0 ? (S.reserva?.acumulado || 0) / d : 0; };
+
 // ══════════════════════════════════════════════════
 // ORÇAMENTO
 // ══════════════════════════════════════════════════
@@ -3840,21 +3927,163 @@ function removeReceita(id) { S.receitas = S.receitas.filter(r => r.id !== id); s
 function addDespesa() {
   const desc = document.getElementById('despDesc').value.trim();
   const cat  = document.getElementById('despCat').value;
+  const subSel = document.getElementById('despSub')?.value || '';
+  const sub  = subSel === '__new__' ? '' : subSel;
   const val  = parseFloat(document.getElementById('despVal').value);
   const data = document.getElementById('despData').value || todayISO();
   if (!desc || isNaN(val) || val <= 0) return;
-  const entry = { id: Date.now(), desc, cat, valor: val, data };
+  const entry = { id: Date.now(), desc, cat, sub, valor: val, data };
   if (cat === CAT_IMPULSO) {
     _openImpulsoModal(entry);
   } else {
     S.despesas.push(entry);
-    document.getElementById('despDesc').value = '';
-    document.getElementById('despVal').value  = '';
-    document.getElementById('despData').value = todayISO();
+    _resetFormDespesa();
     save(); renderOrcamento(); renderDashboard(); renderMetas();
   }
 }
+function _resetFormDespesa() {
+  document.getElementById('despDesc').value = '';
+  document.getElementById('despVal').value  = '';
+  document.getElementById('despData').value = todayISO();
+  const subEl = document.getElementById('despSub');
+  if (subEl) subEl.value = '';
+  const novaRow = document.getElementById('despSubNovaRow');
+  if (novaRow) novaRow.style.display = 'none';
+}
 function removeDespesa(id) { S.despesas = S.despesas.filter(d => d.id !== id); save(); renderOrcamento(); renderDashboard(); renderMetas(); }
+
+// ── Subcategorias de Despesas ──────────────────────
+// Camada puramente organizacional por cima das 9 categorias fixas (que
+// alimentam a regra 50/30/20 e o diagnóstico por IA — por isso essas
+// continuam fixas). Subcategoria é só um rótulo livre dentro da categoria,
+// ex: dentro de "Moradia" -> "Sabesp", "Luz", "Condomínio Vila Nova".
+const CAT_ORDER = ['Moradia','Alimentação','Transporte','Saúde','Educação','Lazer','Investimentos','Desnecessário (Impulsos)','Outros'];
+const _catAbertas = new Set();       // categorias com a régua de lançamentos expandida
+const _catGerenciando = new Set();   // categorias com o painel de subcategorias aberto
+
+function _subcatsDe(cat) { return (S.subcategorias && S.subcategorias[cat]) || []; }
+
+function _popularSubcatSelect() {
+  const catSel = document.getElementById('despCat');
+  const sel = document.getElementById('despSub');
+  if (!catSel || !sel) return;
+  const subs = _subcatsDe(catSel.value);
+  sel.innerHTML = '<option value="">Sem subcategoria</option>' +
+    subs.map(s => `<option value="${s}">${s}</option>`).join('') +
+    '<option value="__new__">+ Nova subcategoria…</option>';
+  const novaRow = document.getElementById('despSubNovaRow');
+  if (novaRow) novaRow.style.display = 'none';
+}
+
+function _onDespSubSelectChange() {
+  const sel = document.getElementById('despSub');
+  const row = document.getElementById('despSubNovaRow');
+  if (!sel || !row) return;
+  if (sel.value === '__new__') { row.style.display = ''; document.getElementById('despSubNovaInput')?.focus(); }
+  else row.style.display = 'none';
+}
+
+function _confirmarNovaSubcat() {
+  const cat = document.getElementById('despCat')?.value;
+  const input = document.getElementById('despSubNovaInput');
+  const nome = input?.value.trim();
+  if (!cat || !nome) return;
+  S.subcategorias = S.subcategorias || {};
+  S.subcategorias[cat] = S.subcategorias[cat] || [];
+  if (!S.subcategorias[cat].includes(nome)) S.subcategorias[cat].push(nome);
+  save();
+  input.value = '';
+  _popularSubcatSelect();
+  document.getElementById('despSub').value = nome;
+}
+
+function toggleCatGroup(cat) {
+  if (_catAbertas.has(cat)) _catAbertas.delete(cat); else _catAbertas.add(cat);
+  renderOrcamento();
+}
+
+function toggleCatGerenciar(cat, ev) {
+  if (ev) ev.stopPropagation();
+  if (_catGerenciando.has(cat)) _catGerenciando.delete(cat);
+  else { _catGerenciando.add(cat); _catAbertas.add(cat); }
+  renderOrcamento();
+}
+
+function adicionarSubcatInline(cat, inputId) {
+  const input = document.getElementById(inputId);
+  const nome = input?.value.trim();
+  if (!nome) return;
+  S.subcategorias = S.subcategorias || {};
+  S.subcategorias[cat] = S.subcategorias[cat] || [];
+  if (!S.subcategorias[cat].includes(nome)) S.subcategorias[cat].push(nome);
+  input.value = '';
+  save(); renderOrcamento();
+}
+
+function removerSubcat(cat, nome, ev) {
+  if (ev) ev.stopPropagation();
+  if (!confirm(`Remover "${nome}" das subcategorias de ${cat}?\n\nDespesas já lançadas com esse rótulo continuam mostrando ele — só some da lista de sugestões para novos lançamentos.`)) return;
+  S.subcategorias[cat] = (S.subcategorias[cat] || []).filter(s => s !== nome);
+  save(); renderOrcamento();
+}
+
+// Agrupa as despesas filtradas por categoria (Natureza), com uma régua
+// expansível por categoria e um painel de gestão de subcategorias — ver
+// _confirmarNovaSubcat/adicionarSubcatInline/removerSubcat.
+function _renderDespesasGrupos(despFilt) {
+  const porCat = {};
+  despFilt.forEach(d => { (porCat[d.cat] = porCat[d.cat] || []).push(d); });
+  const cats = CAT_ORDER.filter(c => porCat[c]);
+  return cats.map(cat => {
+    const itens = porCat[cat];
+    const total = itens.reduce((s, d) => s + d.valor, 0);
+    const aberto = _catAbertas.has(cat);
+    const gerenciando = _catGerenciando.has(cat);
+    const cor = CAT_COLORS[cat] || '#7A7369';
+    const inputId = `subcatNovaInline_${cats.indexOf(cat)}`;
+    let html = `
+      <tr class="cat-group-row" onclick="toggleCatGroup('${cat}')">
+        <td colspan="2">
+          <div class="cat-group-header">
+            <span class="cat-group-arrow ${aberto ? 'aberto' : ''}">›</span>
+            <span style="width:8px;height:8px;border-radius:2px;background:${cor};flex-shrink:0"></span>
+            <span class="cat-group-nome">${cat}</span>
+            <span class="cat-group-count">${itens.length}</span>
+          </div>
+        </td>
+        <td class="num">${fmtD(total)}</td>
+        <td><button class="cat-group-manage" title="Gerenciar subcategorias" onclick="toggleCatGerenciar('${cat}', event)">⚙</button></td>
+      </tr>`;
+    if (gerenciando) {
+      const subs = _subcatsDe(cat);
+      html += `
+      <tr class="cat-manage-row">
+        <td colspan="4">
+          <div class="cat-manage-panel" onclick="event.stopPropagation()">
+            <div class="cat-manage-chips">
+              ${subs.length ? subs.map(s => `<span class="badge subcat-chip">${s} <button onclick="removerSubcat('${cat}','${s.replace(/'/g, "\\'")}',event)">×</button></span>`).join('')
+                             : '<span style="color:var(--text3);font-size:12px">Nenhuma subcategoria ainda — crie a primeira abaixo.</span>'}
+            </div>
+            <div class="cat-manage-add">
+              <input type="text" id="${inputId}" placeholder="Nova subcategoria (ex: Sabesp, Luz, Condomínio)">
+              <button class="btn btn-sm" onclick="adicionarSubcatInline('${cat}','${inputId}')">Adicionar</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+    if (aberto) {
+      html += itens.map(d => `
+        <tr class="cat-item-row">
+          <td>${d.desc}${d.sub ? `<span class="badge subcat-badge">${d.sub}</span>` : ''}</td>
+          <td class="txn-date">${fmtDateShort(d.data)}</td>
+          <td class="num hl-red">${fmtD(d.valor)}</td>
+          <td><button class="btn btn-danger" onclick="removeDespesa(${d.id})">×</button></td>
+        </tr>`).join('');
+    }
+    return html;
+  }).join('');
+}
 
 const CAT_COLORS = { 'Moradia':'#4A7EC4', 'Alimentação':'#4EAA72', 'Transporte':'#D4932A', 'Saúde':'#C06248', 'Educação':'#9A7ACA', 'Lazer':'#C0486A', 'Investimentos':'#CFC8BC', 'Desnecessário (Impulsos)':'#C0782A', 'Outros':'#7A7369' };
 const CAT_IMPULSO = 'Desnecessário (Impulsos)';
@@ -3924,10 +4153,7 @@ function confirmarImpulso() {
   S.despesas.push({ ..._impulsoData, motivoEmocional: _impulsoMotivo });
   _impulsoData = null;
   closeImpulsoModal();
-  // Limpa campos
-  document.getElementById('despDesc').value = '';
-  document.getElementById('despVal').value  = '';
-  document.getElementById('despData').value = todayISO();
+  _resetFormDespesa();
   save(); renderOrcamento(); renderDashboard(); renderMetas();
   // Toast estoico
   _showToast('Registrado. Vigilância é sabedoria.');
@@ -3962,18 +4188,12 @@ function renderOrcamento() {
       </tr>`).join('');
   document.getElementById('lblTotalReceitas').textContent = fmt(totalRec());
 
-  // Despesas — com filtro temporal
+  // Despesas — com filtro temporal, agrupadas por categoria (ver _renderDespesasGrupos)
   const despFilt = _filterTxns(S.despesas, 'desp');
   const bd = document.getElementById('bodyDespesas');
   bd.innerHTML = despFilt.length === 0
-    ? `<tr><td colspan="5"><div class="empty-state"><div class="icon">📋</div>${S.despesas.length ? 'Nenhuma despesa no período selecionado.' : 'Nenhuma despesa registrada.'}</div></td></tr>`
-    : despFilt.map(d => `<tr>
-        <td>${d.desc}</td>
-        <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:2px;background:${CAT_COLORS[d.cat]||'#636366'};flex-shrink:0"></span>${d.cat}</span></td>
-        <td class="txn-date">${fmtDateShort(d.data)}</td>
-        <td class="num hl-red">${fmtD(d.valor)}</td>
-        <td><button class="btn btn-danger" onclick="removeDespesa(${d.id})">×</button></td>
-      </tr>`).join('');
+    ? `<tr><td colspan="4"><div class="empty-state"><div class="icon">📋</div>${S.despesas.length ? 'Nenhuma despesa no período selecionado.' : 'Nenhuma despesa registrada.'}</div></td></tr>`
+    : _renderDespesasGrupos(despFilt);
   document.getElementById('lblTotalDespesas').textContent = fmt(totalDesp());
 
   renderResumo5030();
@@ -5137,12 +5357,12 @@ function renderDashboard() {
                   : !empAtivos.length ? `<span class="kpi-badge ok">✓ Todos quitados</span>`
                   : `<span class="kpi-badge ${empMensal > desp * 0.3 ? 'bad' : 'warn'}">${fmt(empMensal)}/mês · ${empAtivos.length} ativo${empAtivos.length > 1 ? 's' : ''}</span>`;
 
-  // Reserva de Emergência — mesma fórmula da seção Reserva e do card em Metas:
-  // meta custom, ou 12x as despesas mensais quando não definida.
+  // Reserva de Emergência — fórmula única em reservaMeta()/reservaPct(), para
+  // não divergir do que a aba Metas, o widget "Meta Principal" e Futuro mostram.
   const resAcum  = S.reserva?.acumulado || 0;
-  const resMeta  = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
-  const resPct   = resMeta > 0 ? Math.min(100, (resAcum / resMeta) * 100) : 0;
-  const resMeses = desp > 0 ? resAcum / desp : 0;
+  const resMeta  = reservaMeta();
+  const resPct   = reservaPct();
+  const resMeses = reservaMesesCobertos();
   const badgeRes = resMeta === 0   ? `<span class="kpi-badge warn">— Lance suas despesas</span>`
                  : resPct >= 100   ? `<span class="kpi-badge ok">✓ Meta atingida</span>`
                  : `<span class="kpi-badge ${resMeses >= 6 ? 'ok' : resMeses >= 3 ? 'warn' : 'bad'}">${resMeses.toFixed(1)} ${resMeses === 1 ? 'mês coberto' : 'meses cobertos'}</span>`;
@@ -5260,12 +5480,12 @@ function renderMetaPrincipalWidget() {
       </div>`;
   } else {
     const acum   = S.reserva?.acumulado || 0;
-    const meta   = (S.reserva?.metaCustom > 0) ? S.reserva.metaCustom : (desp > 0 ? desp * 12 : 0);
+    const meta   = reservaMeta();
     if (!(meta > 0)) {
       body.innerHTML = `<div class="info-box">Registre suas despesas ou defina uma meta manual na aba Reserva.</div>`;
       return;
     }
-    const pct = Math.min(100, (acum / meta) * 100);
+    const pct = reservaPct();
     const cor = pct >= 100 ? 'var(--green)' : 'var(--gold)';
     body.innerHTML = `
       <div style="text-align:center;margin-bottom:10px">
@@ -5452,26 +5672,31 @@ function renderMetas() {
       </button>
     </div>`;
 
-  // ── Reserva de Emergência: desp × 12 ──────────────────────────
-  if (!despValida) {
+  // ── Reserva de Emergência: valor acumulado (S.reserva.acumulado) sobre a
+  // meta — mesma fórmula de Dashboard/Reserva/Futuro (reservaMeta/reservaPct).
+  // Antes este card usava patrimônio líquido, que é uma conta diferente (inclui
+  // ativos e desconta dívidas/empréstimos) e por isso mostrava um percentual de
+  // reserva divergente do resto do app para o mesmo usuário.
+  const resAcumMetas = S.reserva?.acumulado || 0;
+  if (!despValida && !(S.reserva?.metaCustom > 0)) {
     document.getElementById('cardReserva').innerHTML = _cardBloqueado('a Reserva de Emergência');
   } else {
-    const metaRes  = despAnual;           // desp × 12
-    const pctRes   = Math.min(100, (patLiq / metaRes) * 100);
-    const faltaRes = Math.max(0, metaRes - patLiq);
+    const metaRes  = reservaMeta();
+    const pctRes   = reservaPct();
+    const faltaRes = Math.max(0, metaRes - resAcumMetas);
     document.getElementById('cardReserva').innerHTML = `
       <div style="text-align:center;margin-bottom:14px">
         <div style="font-size:28px;font-weight:800;color:${pctRes>=100?'var(--green)':'var(--gold)'}">${fmtP(pctRes)}</div>
-        <div style="font-size:12px;color:var(--text3)">Meta: ${fmt(metaRes)} (12× despesas mensais)</div>
+        <div style="font-size:12px;color:var(--text3)">Meta: ${fmt(metaRes)} ${S.reserva?.metaCustom > 0 ? '(manual)' : '(12× despesas mensais)'}</div>
       </div>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pctRes}%;background:${pctRes>=100?'var(--green)':'var(--gold)'}"></div></div>
       <div style="margin-top:10px;font-size:12px;color:var(--text3)">
         ${pctRes>=100
           ? '✅ Reserva completa! Foque em investimentos de longo prazo.'
-          : `Faltam <strong style="color:var(--text)">${fmt(faltaRes)}</strong> para 12 meses de cobertura.`}
+          : `Faltam <strong style="color:var(--text)">${fmt(faltaRes)}</strong> para completar a reserva.`}
       </div>
       <div class="info-box" style="margin-top:10px"><strong>Princípio:</strong> "A reserva é o escudo do guerreiro contra a incerteza." — Sêneca</div>
-      <div class="sync-note">${catLabel} no Orçamento · <strong>${despLabel}</strong>/mês → meta de ${fmt(metaRes)}</div>`;
+      <div class="sync-note">${resAcumMetas>0?fmt(resAcumMetas)+' acumulados':catLabel+' no Orçamento'} · <strong>${despLabel}</strong>/mês → meta de ${fmt(metaRes)}</div>`;
   }
 
   // ── Número FIRE: desp × 12 × 25 ───────────────────────────────
@@ -6143,6 +6368,7 @@ function importBackup(event) {
       // Garante campos obrigatórios
       S.reserva       = S.reserva      || { acumulado:0, metaCustom:0, prazo:12 };
       S.orcamentoCats = S.orcamentoCats|| {};
+      S.subcategorias = S.subcategorias|| {};
       S.marcos        = S.marcos       || [];
       S.checkIn       = S.checkIn      || { ultimo:'', streak:0 };
       S.ritual        = S.ritual       || { ultimo:'', texto:'', streak:0 };
@@ -6209,7 +6435,7 @@ function _confirmarLimpeza() {
     receitas:[], despesas:[], dividas:[], pagas:[],
     strategy:'avalanche', ativos:0,
     reserva:{ acumulado:0, metaCustom:0, prazo:12 },
-    orcamentoCats:{}, marcos:[], checkIn:{ ultimo:'', streak:0 }, ritual:{ ultimo:'', texto:'', streak:0 },
+    orcamentoCats:{}, subcategorias:{}, marcos:[], checkIn:{ ultimo:'', streak:0 }, ritual:{ ultimo:'', texto:'', streak:0 },
     centavo:{ diaAtual:0, datasMarcadas:[], ultimoMarco:0, valoresManuais:{}, modoManual:false, concluido:false },
     meta10x:{ ativo:false, valorAlvo:0, valorInicial:0, dataInicio:'', dataFim:'' },
   });
@@ -6227,6 +6453,7 @@ function _ensureDefaults() {
   S.reserva      = S.reserva      || { acumulado: 0, metaCustom: 0, prazo: 12 };
   (S.dividas||[]).forEach(d => { if (d.parcelasPagas === undefined) d.parcelasPagas = 0; });
   S.orcamentoCats= S.orcamentoCats|| {};
+  S.subcategorias= S.subcategorias|| {};
   S.emprestimos  = S.emprestimos  || [];
   S.marcos       = S.marcos       || [];
   S.checkIn      = S.checkIn      || { ultimo: '', streak: 0 };
@@ -6250,7 +6477,7 @@ async function _bootApp() {
   if (el) el.value = S.ativos || 0;
   // Pinta só a seção visível (dashboard) primeiro → primeira pintura mais rápida.
   renderDashboard();
-  initFocus(); _initDateDefaults();
+  initFocus(); _initDateDefaults(); _popularSubcatSelect();
   _triggerRitual(); _triggerCheckin();
   _initBottomNavFade(); _initNavTabsScroll();
   // As demais seções (invisíveis no boot) são renderizadas no tempo ocioso; o
@@ -7471,8 +7698,8 @@ function renderFuturo() {
       pct   = meta>0 ? Math.min((atual/meta)*100,100) : (totalDiv()===0?100:0);
     } else if (m.auto==='reserva') {
       atual = S.reserva?.acumulado || 0;
-      meta  = (S.reserva?.metaCustom>0 ? S.reserva.metaCustom : totalDesp()*12) || 0;
-      pct   = meta>0 ? Math.min((atual/meta)*100,100) : 0;
+      meta  = reservaMeta();
+      pct   = reservaPct();
     } else {
       atual = m.atual || 0;
       meta  = m.valor || 0;

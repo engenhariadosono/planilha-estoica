@@ -2096,12 +2096,45 @@ input:focus, select:focus {
   50%      { filter: drop-shadow(0 0 14px rgba(168,161,151,0.75)); }
 }
 
+/* ─── 27. MAR NA BARRA SUPERIOR — ondas em deriva ─── */
+/* Duas camadas de onda (mesma máscara SVG tileável de 220px, luminância
+   como alpha) correndo em velocidades e sentidos opostos = leve efeito de
+   paralaxe de mar. A cor vem de var(--blue)/var(--blue-dim), então acompanha
+   o tema claro/escuro sem precisar duplicar o SVG. */
+.nav-header { overflow: hidden; }
+.nav-header::before, .nav-header::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 30px;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+  -webkit-mask-size: 220px 30px; mask-size: 220px 30px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 30'%3E%3Cpath fill='white' d='M0 16 C18 4 37 4 55 16 C73 28 92 28 110 16 C128 4 147 4 165 16 C183 28 202 28 220 16 V30 H0 Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 30'%3E%3Cpath fill='white' d='M0 16 C18 4 37 4 55 16 C73 28 92 28 110 16 C128 4 147 4 165 16 C183 28 202 28 220 16 V30 H0 Z'/%3E%3C/svg%3E");
+}
+.nav-header::before {
+  background: linear-gradient(90deg, var(--blue-dim), var(--blue), var(--blue-dim));
+  opacity: 0.35;
+  animation: navWaveDrift 15s linear infinite;
+}
+.nav-header::after {
+  background: var(--blue);
+  opacity: 0.18;
+  height: 22px;
+  animation: navWaveDrift 9s linear infinite reverse;
+}
+@keyframes navWaveDrift {
+  from { -webkit-mask-position-x: 0;    mask-position-x: 0; }
+  to   { -webkit-mask-position-x: -220px; mask-position-x: -220px; }
+}
+
 /* ─── reduced-motion: respeitar preferência ─── */
 @media (prefers-reduced-motion: reduce) {
   .section, .kpi-card, .data-table tbody tr,
   .pe-ripple, .empty-state .icon,
   .badge-green, .debt-avista, .meter-fill,
-  .ico-float, .stoic-ornament-center, .stoic-card::after, .nav-brand-glyph {
+  .ico-float, .stoic-ornament-center, .stoic-card::after, .nav-brand-glyph,
+  .nav-header::before, .nav-header::after {
     animation: none !important;
     transition: none !important;
   }

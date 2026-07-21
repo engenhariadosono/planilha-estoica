@@ -774,6 +774,15 @@ select option { background: var(--surface2); }
   transition: opacity 1.2s ease;
   will-change: opacity;
 }
+/* Camada da foto real — some por cima do gradiente com cross-fade suave
+   assim que o carregamento (fora do DOM, via Image()) termina. */
+#authHeroPhoto {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center 15%; background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+#authHeroPhoto.loaded { opacity: 1; }
 /* Overlay escuro — legibilidade do avatar e texto */
 .auth-overlay {
   position: absolute; inset: 0; z-index: 1;
@@ -2202,8 +2211,11 @@ input:focus, select:focus {
 
 <!-- ═══ SPLASH / GATEKEEPER ═══ -->
 <div id="authOverlay">
-  <!-- Hero foto (preloaded via JS, fallback CSS imediato) -->
+  <!-- Hero foto: gradiente CSS aparece na hora; a foto real (authHeroPhoto)
+       é pré-carregada em segundo plano e faz cross-fade só quando pronta —
+       nunca bloqueia a primeira pintura da tela de entrada. -->
   <div id="authHero"></div>
+  <div id="authHeroPhoto"></div>
   <div class="auth-overlay"></div>
   <div class="auth-grain"></div>
 
@@ -6263,7 +6275,6 @@ function showGatekeeper() {
   if (closeBtn) closeBtn.style.display = 'flex';
   const box = document.getElementById('authBox');
   if (box) { box.style.transform = ''; box.style.opacity = ''; }
-  _preloadSplashImage();
   const hasPass = !!localStorage.getItem(_AK);
   if (!hasPass) {
     if (box) box.classList.remove('gk-mode');
@@ -6285,22 +6296,8 @@ function showGatekeeper() {
   }
 }
 
-// ══════════════════════════════════════════════════
-// SPLASH — TELA DE BLOQUEIO (vídeo de fundo)
-// ══════════════════════════════════════════════════
-// O vídeo já é nativo via <video autoplay loop muted> no HTML — essa
-// função só garante que ele está tocando (alguns navegadores bloqueiam
-// autoplay até haver alguma interação do usuário na página).
-function _preloadSplashImage() {
-  const video = document.getElementById('authHeroVideo');
-  if (video && video.paused) {
-    video.play().catch(() => { /* autoplay bloqueado — fallback CSS permanece visível */ });
-  }
-}
-
 // ── Init auth overlay ────────────────────────────
 function initAuth() {
-  _preloadSplashImage(); // começa a baixar enquanto usuário ainda está na tela
   const hasPass = !!localStorage.getItem(_AK);
   if (!hasPass) {
     document.getElementById('authSetup').style.display = '';
@@ -8746,38 +8743,17 @@ async function pwaInstall() {
 
 
 <script>
-(function() {
-  var FOTOS_ESTOICAS = [
-    'https://images.unsplash.com/photo-1754577060078-21315dd188c8?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1631131431211-4f768d89087d?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1675383094481-3e2088da943b?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1617244147030-8bd6f9e21d1e?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1688120320226-a73ed520c8b7?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1580411402629-e0cdf76f3d3b?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1591470481729-2bcc11e3acb8?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format',
-    'https://images.unsplash.com/photo-1495603889488-42d1d66e5523?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format'
-  ];
-  var lastIdx = parseInt(sessionStorage.getItem('pe_foto_idx') || '-1');
-  var idx;
-  do { idx = Math.floor(Math.random() * FOTOS_ESTOICAS.length); } while (idx === lastIdx && FOTOS_ESTOICAS.length > 1);
-  sessionStorage.setItem('pe_foto_idx', idx);
-  var fotoUrl = FOTOS_ESTOICAS[idx];
-  function aplicarFoto() {
-    var btn = document.getElementById('gkAvatarBtn');
-    if (!btn) return;
-    btn.innerHTML = '';
-    btn.style.backgroundImage = "url('" + fotoUrl + "')";
-    btn.style.backgroundSize = 'cover';
-    btn.style.backgroundPosition = 'center top';
-    btn.style.backgroundRepeat = 'no-repeat';
-    btn.style.border = '2.5px solid rgba(168,161,151,0.6)';
-    btn.style.boxShadow = '0 0 0 4px rgba(168,161,151,0.12), 0 12px 48px rgba(0,0,0,0.75), 0 0 80px rgba(168,161,151,0.15)';
-    clearInterval(timer);
-  }
-  var timer = setInterval(aplicarFoto, 100);
-  aplicarFoto();
-})();
-</script><script>
+// Foto da tela de entrada (avatar + hero de fundo). Antes havia DOIS scripts
+// quase idênticos aqui — o segundo sobrescrevia o avatar já aplicado pelo
+// primeiro, ou seja, dois downloads de imagem disputando banda logo na
+// abertura do app só para um deles vencer. Consolidado num só:
+//  - Avatar (pequeno, crop nas faces) aplica na hora — é leve.
+//  - Hero (fundo grande) é pré-carregado FORA do DOM via Image() e só entra
+//    com cross-fade quando a rede/CPU já estiverem ociosas (requestIdleCallback),
+//    pra nunca competir com fontes/autenticação pela banda na abertura.
+//  - Dimensão do hero reduzida de 2560×1440 pra 1280×1707 (~½ dos bytes) e
+//    crop trocado pra "faces" (igual ao avatar) pra não cortar o rosto da
+//    foto de forma inconsistente entre os dois usos.
 (function() {
   'use strict';
   var FOTOS = [
@@ -8793,34 +8769,39 @@ async function pwaInstall() {
     'photo-1610652492500-ded49ceeb378'
   ];
   var BASE  = 'https://images.unsplash.com/';
-  var P_BG  = '?fm=jpg&q=90&w=2560&h=1440&fit=crop&crop=top&auto=format';
-  var P_BTN = '?fm=jpg&q=90&w=300&h=300&fit=crop&crop=faces&auto=format';
+  var P_BG  = '?fm=jpg&q=85&w=1280&h=1707&fit=crop&crop=faces&auto=format';
+  var P_BTN = '?fm=jpg&q=85&w=200&h=200&fit=crop&crop=faces&auto=format';
   var last = parseInt(sessionStorage.getItem('pe_fi') || '-1');
   var idx;
   do { idx = Math.floor(Math.random() * FOTOS.length); }
   while (idx === last && FOTOS.length > 1);
   sessionStorage.setItem('pe_fi', idx);
-  var foto = FOTOS[idx];
-  function aplicar() {
-    var hero = document.getElementById('authHero');
-    if (hero) {
-      hero.style.backgroundImage    = 'url("' + BASE + foto + P_BG  + '")';
-      hero.style.backgroundSize     = 'cover';
-      hero.style.backgroundPosition = 'center 15%';
-      hero.style.backgroundRepeat   = 'no-repeat';
-    }
-    var btn = document.getElementById('gkAvatarBtn');
-    if (btn) {
-      btn.innerHTML = '';
-      btn.style.backgroundImage    = 'url("' + BASE + foto + P_BTN + '")';
-      btn.style.backgroundSize     = 'cover';
-      btn.style.backgroundPosition = 'center top';
-      btn.style.backgroundRepeat   = 'no-repeat';
-    }
-    if (hero && btn) clearInterval(timer);
+  var foto  = FOTOS[idx];
+  var urlBg  = BASE + foto + P_BG;
+  var urlBtn = BASE + foto + P_BTN;
+
+  var btn = document.getElementById('gkAvatarBtn');
+  if (btn) {
+    btn.innerHTML = '';
+    btn.style.backgroundImage    = 'url("' + urlBtn + '")';
+    btn.style.backgroundSize     = 'cover';
+    btn.style.backgroundPosition = 'center top';
+    btn.style.backgroundRepeat   = 'no-repeat';
+    btn.style.border             = '2.5px solid rgba(168,161,151,0.6)';
+    btn.style.boxShadow          = '0 0 0 4px rgba(168,161,151,0.12), 0 12px 48px rgba(0,0,0,0.75), 0 0 80px rgba(168,161,151,0.15)';
   }
-  var timer = setInterval(aplicar, 100);
-  aplicar();
+
+  function carregarHero() {
+    var camada = document.getElementById('authHeroPhoto');
+    if (!camada) return;
+    var img = new Image();
+    img.onload = function() {
+      camada.style.backgroundImage = 'url("' + urlBg + '")';
+      camada.classList.add('loaded');
+    };
+    img.src = urlBg;
+  }
+  (window.requestIdleCallback || function(fn) { setTimeout(fn, 300); })(carregarHero);
 })();
 </script>
 <script>

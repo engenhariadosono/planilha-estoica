@@ -1159,7 +1159,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .card:hover, .kpi-card:hover { transform: none !important; }
   /* Safe area para iOS notch */
   .nav-header { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
-  .main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 }
 
 /* ─── FOCUS MODE ─── */
@@ -1253,13 +1253,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    position: sticky; bottom: 0;
+    position: fixed; left: 0; right: 0; bottom: 0; width: 100%;
     background: var(--nav-bg-mob);
     border-top: 1px solid var(--border-md);
     box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     z-index: 200;
     padding: 6px 6px max(8px, env(safe-area-inset-bottom));
+    /* Some ao rolar para baixo e reaparece ao rolar para cima — mesmo
+       padrão do YouTube, para os ícones não ocuparem tela em listas longas. */
+    transform: translateY(0);
+    transition: transform 0.28s ease;
   }
+  .bottom-nav.bn-hidden { transform: translateY(100%); }
   .bottom-nav::-webkit-scrollbar { display: none; }
   .bottom-nav button {
     flex: 0 0 auto; min-width: 62px; background: none; border: none; cursor: pointer;
@@ -1870,7 +1875,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ─── 3. BOTTOM NAV — PILL DESLIZANTE ─── */
 @media (max-width: 768px) {
-  .bottom-nav { position: relative; }
+  /* .bottom-nav já é "position: fixed" (regra acima) — não sobrescrever
+     para "relative" aqui. Esse override é o que fazia os ícones só
+     aparecerem depois de rolar a página inteira até o fim: com
+     "relative" o nav some do posicionamento fixo e volta a ocupar seu
+     lugar no fluxo normal do documento, lá embaixo de tudo. */
   .bn-pill {
     position: absolute;
     height: calc(100% - 12px);
@@ -9127,6 +9136,32 @@ async function pwaInstall() {
     });
   }
 
+  /* ── 3.5. BOTTOM NAV — OCULTA AO ROLAR (estilo YouTube) ──
+     Rolando para baixo, os ícones somem para dar mais espaço ao
+     conteúdo; rolando para cima (mesmo um pouco), eles voltam. */
+  var _bnLastY = window.scrollY || 0;
+  var _bnTicking = false;
+  function updateBnVisibility() {
+    var nav = document.querySelector('.bottom-nav');
+    _bnTicking = false;
+    if (!nav || window.innerWidth > 768) return;
+    var y = Math.max(window.scrollY || 0, 0);
+    var delta = y - _bnLastY;
+    if (y < 40) {
+      nav.classList.remove('bn-hidden');
+    } else if (delta > 6) {
+      nav.classList.add('bn-hidden');
+    } else if (delta < -6) {
+      nav.classList.remove('bn-hidden');
+    }
+    _bnLastY = y;
+  }
+  function onWindowScroll() {
+    if (_bnTicking) return;
+    _bnTicking = true;
+    requestAnimationFrame(updateBnVisibility);
+  }
+
   /* ── 4. INTEGRAÇÃO COM showSection ─────────────────── */
   var _origShowSection = window.showSection;
   window.showSection = function(id, btn) {
@@ -9135,6 +9170,10 @@ async function pwaInstall() {
     setTimeout(updateBnPill, 60);
     // Ripple em novos botões renderizados
     setTimeout(bindRipple, 200);
+    // Garante que o bottom nav volte a aparecer ao trocar de aba
+    var navEl = document.querySelector('.bottom-nav');
+    if (navEl) navEl.classList.remove('bn-hidden');
+    _bnLastY = window.scrollY || 0;
   };
 
   /* ── 5. INICIALIZAÇÃO ────────────────────────────────── */
@@ -9146,6 +9185,9 @@ async function pwaInstall() {
     // Atualiza pill ao scroll horizontal do bottom nav
     var nav = document.querySelector('.bottom-nav');
     if (nav) nav.addEventListener('scroll', updateBnPill, { passive: true });
+
+    // Mostra/oculta o bottom nav conforme a direção da rolagem da página
+    window.addEventListener('scroll', onWindowScroll, { passive: true });
 
     // Re-bind ripple quando DOM mudar (seções renderizadas dinamicamente)
     var obs = new MutationObserver(function() {

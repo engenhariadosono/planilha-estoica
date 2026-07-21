@@ -1032,6 +1032,43 @@ select option { background: var(--surface2); }
 .impulso-reflexao.show { display: block; }
 .impulso-reflexao.ok { background: rgba(78,170,114,0.08); border-left-color: var(--green); }
 
+/* ─── QUITAR DÍVIDA MODAL ─── */
+#quitarModal {
+  display: none; position: fixed; inset: 0; z-index: 3100;
+  background: rgba(0,0,0,0.78); backdrop-filter: blur(6px);
+  align-items: flex-end; justify-content: center;
+}
+#quitarModal.open { display: flex; }
+.quitar-box {
+  width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  border: 1px solid rgba(78,170,114,0.30); border-bottom: none;
+  padding: 8px 24px 44px;
+  box-shadow: 0 -8px 48px rgba(0,0,0,0.60), 0 -2px 0 var(--green);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+#quitarModal.open .quitar-box { transform: translateY(0); }
+.quitar-handle { width: 44px; height: 4px; background: var(--surface3); border-radius: 2px; margin: 12px auto 20px; }
+.quitar-icon  { font-size: 34px; text-align: center; margin-bottom: 8px; }
+.quitar-title { font-size: 17px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 4px; }
+.quitar-sub   { font-size: 12.5px; color: var(--text3); text-align: center; margin-bottom: 16px; }
+.quitar-saldo-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--surface2); border-radius: 10px;
+  margin-bottom: 16px; font-size: 13px; color: var(--text2); border: 1px solid var(--border-md);
+}
+.quitar-saldo-row strong { color: var(--text); font-size: 15px; }
+.quitar-fields { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.quitar-fields .ocr-field { flex: 1; min-width: 150px; }
+.quitar-preview {
+  font-size: 13px; line-height: 1.6; color: var(--text2);
+  background: rgba(78,170,114,0.08); border-left: 3px solid var(--green);
+  border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 16px;
+}
+.quitar-actions { display: flex; gap: 10px; }
+
 /* ─── DOMÍNIO PRÓPRIO INDICATOR ─── */
 .dominio-wrap {
   margin-top: 18px; padding: 16px 18px;
@@ -1122,7 +1159,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .card:hover, .kpi-card:hover { transform: none !important; }
   /* Safe area para iOS notch */
   .nav-header { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
-  .main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 }
 
 /* ─── FOCUS MODE ─── */
@@ -1216,13 +1253,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    position: sticky; bottom: 0;
+    position: fixed; left: 0; right: 0; bottom: 0; width: 100%;
     background: var(--nav-bg-mob);
     border-top: 1px solid var(--border-md);
     box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     z-index: 200;
     padding: 6px 6px max(8px, env(safe-area-inset-bottom));
+    /* Some ao rolar para baixo e reaparece ao rolar para cima — mesmo
+       padrão do YouTube, para os ícones não ocuparem tela em listas longas. */
+    transform: translateY(0);
+    transition: transform 0.28s ease;
   }
+  .bottom-nav.bn-hidden { transform: translateY(100%); }
   .bottom-nav::-webkit-scrollbar { display: none; }
   .bottom-nav button {
     flex: 0 0 auto; min-width: 62px; background: none; border: none; cursor: pointer;
@@ -1306,6 +1348,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .debt-prog-ind .ind-l { font-size: 10px; color: var(--text3); margin-top: 1px; }
 .debt-prog-legend { font-size: 11px; color: var(--text3); font-style: italic; line-height: 1.55; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .debt-card-actions { display: flex; gap: 7px; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+/* Proposta de quitação recebida do credor — sempre visível antes de quitar */
+.debt-proposta-box {
+  margin: 12px 0; padding: 12px 14px;
+  background: rgba(168,161,151,0.07); border: 1px dashed rgba(168,161,151,0.35);
+  border-radius: 12px;
+}
+.debt-proposta-label { font-size: 11px; font-weight: 700; color: var(--gold-bright); text-transform: uppercase; letter-spacing: 0.4px; }
+.debt-proposta-row { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.debt-proposta-field label { display: block; font-size: 9.5px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+.debt-proposta-input {
+  width: 130px; box-sizing: border-box; background: var(--surface2); border: 1px solid var(--border-md);
+  border-radius: 9px; padding: 9px 11px; color: var(--text); font-size: 13px; font-family: inherit;
+}
+.debt-proposta-input:focus { outline: none; border-color: var(--gold); }
+.debt-proposta-result { font-size: 12.5px; color: var(--text2); line-height: 1.5; flex: 1; min-width: 160px; }
 /* Prévia ao vivo da taxa embutida no formulário de empréstimo */
 .emp-preview:not(:empty) {
   margin-top: 12px; padding: 10px 13px;
@@ -1818,7 +1875,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ─── 3. BOTTOM NAV — PILL DESLIZANTE ─── */
 @media (max-width: 768px) {
-  .bottom-nav { position: relative; }
+  /* .bottom-nav já é "position: fixed" (regra acima) — não sobrescrever
+     para "relative" aqui. Esse override é o que fazia os ícones só
+     aparecerem depois de rolar a página inteira até o fim: com
+     "relative" o nav some do posicionamento fixo e volta a ocupar seu
+     lugar no fluxo normal do documento, lá embaixo de tudo. */
   .bn-pill {
     position: absolute;
     height: calc(100% - 12px);
@@ -4477,15 +4538,91 @@ function addDivida() {
 }
 function removeDivida(id) { S.dividas = S.dividas.filter(d => d.id !== id); save(); renderDividas(); renderMetas(); }
 
-function markDividaPaga(id) {
-  const div = S.dividas.find(d => d.id === id);
-  if (!div) return;
-  S.pagas = S.pagas || [];
-  S.pagas.push({ ...div, dataPagamento: new Date().toLocaleDateString('pt-BR') });
-  S.dividas = S.dividas.filter(d => d.id !== id);
-  save(); renderDividas(); renderDashboard(); renderMetas();
-}
 function removePaga(id) { S.pagas = (S.pagas || []).filter(p => p.id !== id); save(); renderDividas(); }
+
+// Proposta de quitação à vista recebida do credor — fica sempre visível no
+// card da dívida, antes de efetivamente quitá-la.
+function updatePropostaDivida(id, val) {
+  const d = S.dividas.find(x => x.id === id);
+  if (!d) return;
+  const v = parseFloat(val);
+  d.propostaValor = (isNaN(v) || v <= 0) ? null : v;
+  save(); renderDividas();
+}
+
+// ══════════════════════════════════════════════════
+// QUITAR À VISTA — modal com taxa de desconto / valor pago
+// ══════════════════════════════════════════════════
+let _quitarDividaId = null;
+
+function _quitarDividaAtual() { return S.dividas.find(x => x.id === _quitarDividaId); }
+
+function openQuitarModal(id) {
+  const d = S.dividas.find(x => x.id === id);
+  if (!d) return;
+  _quitarDividaId = id;
+  document.getElementById('qtDividaNome').textContent = d.nome;
+  document.getElementById('qtSaldoOriginal').textContent = fmtD(d.saldo);
+  const valorInicial = (d.propostaValor && d.propostaValor > 0 && d.propostaValor < d.saldo) ? d.propostaValor : d.saldo;
+  document.getElementById('qtValorPago').value = valorInicial.toFixed(2);
+  document.getElementById('qtDescontoPct').value = (d.saldo > 0 ? ((d.saldo - valorInicial) / d.saldo) * 100 : 0).toFixed(2);
+  _updateQuitarPreview();
+  document.getElementById('quitarModal').classList.add('open');
+}
+
+function closeQuitarModal() {
+  document.getElementById('quitarModal').classList.remove('open');
+  _quitarDividaId = null;
+}
+
+function qtFromValor() {
+  const d = _quitarDividaAtual(); if (!d) return;
+  let v = parseFloat(document.getElementById('qtValorPago').value);
+  if (isNaN(v) || v < 0) v = 0;
+  if (v > d.saldo) v = d.saldo;
+  const pct = d.saldo > 0 ? ((d.saldo - v) / d.saldo) * 100 : 0;
+  document.getElementById('qtDescontoPct').value = pct.toFixed(2);
+  _updateQuitarPreview();
+}
+
+function qtFromPct() {
+  const d = _quitarDividaAtual(); if (!d) return;
+  let pct = parseFloat(document.getElementById('qtDescontoPct').value);
+  if (isNaN(pct) || pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  const v = d.saldo * (1 - pct / 100);
+  document.getElementById('qtValorPago').value = v.toFixed(2);
+  _updateQuitarPreview();
+}
+
+function _updateQuitarPreview() {
+  const d = _quitarDividaAtual(); if (!d) return;
+  const v = parseFloat(document.getElementById('qtValorPago').value) || 0;
+  const economia = Math.max(0, d.saldo - v);
+  const pct = d.saldo > 0 ? (economia / d.saldo) * 100 : 0;
+  document.getElementById('qtEconomiaPreview').innerHTML = economia > 0.009
+    ? `Por ter pago à vista, você <strong style="color:var(--green)">economizou ${fmtD(economia)}</strong> — um desconto de <strong style="color:var(--green)">${pct.toFixed(1)}%</strong> sobre o saldo devedor.`
+    : `Quitação sem desconto — valor integral de ${fmtD(d.saldo)}.`;
+}
+
+function confirmQuitarDivida() {
+  const d = _quitarDividaAtual();
+  if (!d) return;
+  let valorPago = parseFloat(document.getElementById('qtValorPago').value);
+  if (isNaN(valorPago) || valorPago < 0) valorPago = d.saldo;
+  if (valorPago > d.saldo) valorPago = d.saldo;
+  const economia    = Math.max(0, d.saldo - valorPago);
+  const descontoPct = d.saldo > 0 ? (economia / d.saldo) * 100 : 0;
+  S.pagas = S.pagas || [];
+  S.pagas.push({ ...d, dataPagamento: new Date().toLocaleDateString('pt-BR'), valorPago, descontoPct, economia, avista: true });
+  S.dividas = S.dividas.filter(x => x.id !== d.id);
+  save();
+  closeQuitarModal();
+  renderDividas(); renderDashboard(); renderMetas();
+  _showToast(economia > 0.009
+    ? `✓ Dívida quitada — você economizou ${fmtD(economia)} (${descontoPct.toFixed(1)}%)`
+    : '✓ Dívida quitada');
+}
 
 // Códigos de retorno:
 //  0   = já quitada
@@ -4928,6 +5065,29 @@ function renderDividas() {
       }
 
       const dateClrHeader = !error && mRest <= 12 ? 'var(--green)' : !error && mRest <= 36 ? 'var(--gold)' : 'var(--red)';
+
+      // Proposta de quitação à vista recebida do credor — sempre visível
+      let propostaResult = '<span style="color:var(--text3)">Registre aqui uma proposta de desconto recebida do credor, para acompanhar antes de quitar.</span>';
+      if (d.propostaValor && d.propostaValor > 0 && d.propostaValor < d.saldo) {
+        const economiaProposta = d.saldo - d.propostaValor;
+        const pctProposta = d.saldo > 0 ? (economiaProposta / d.saldo) * 100 : 0;
+        propostaResult = `Pagando à vista por <strong style="color:var(--text)">${fmt(d.propostaValor)}</strong> você economizaria <strong style="color:var(--green)">${fmt(economiaProposta)}</strong> <span style="color:var(--green);font-weight:700">(${pctProposta.toFixed(1)}%)</span>`;
+      }
+      const propostaBlock = `
+        <div class="debt-proposta-box">
+          <span class="debt-proposta-label">🤝 Proposta de Quitação</span>
+          <div class="debt-proposta-row">
+            <div class="debt-proposta-field">
+              <label>Valor da proposta</label>
+              <input type="number" class="debt-proposta-input" min="0" step="0.01" placeholder="0,00"
+                value="${d.propostaValor || ''}"
+                onclick="event.stopPropagation()"
+                onchange="updatePropostaDivida(${d.id}, this.value)">
+            </div>
+            <div class="debt-proposta-result">${propostaResult}</div>
+          </div>
+        </div>`;
+
       return `
       <div class="debt-card ${isFocus ? 'debt-focus' : ''}">
         <div class="debt-card-header">
@@ -4956,8 +5116,9 @@ function renderDividas() {
           </div>
         </div>
         ${progressBlock}
+        ${propostaBlock}
         <div class="debt-card-actions">
-          <button class="btn btn-sm" onclick="markDividaPaga(${d.id})"
+          <button class="btn btn-sm" onclick="openQuitarModal(${d.id})"
             style="background:var(--green-dim);color:var(--green);border:1px solid rgba(78,170,114,0.28)">✓ Quitar</button>
           <button class="btn btn-danger btn-sm" onclick="removeDivida(${d.id})">× Remover</button>
         </div>
@@ -4972,20 +5133,28 @@ function renderDividas() {
     if (!pagas.length) { elQ.style.display = 'none'; }
     else {
       elQ.style.display = '';
+      const economiaTotal = pagas.reduce((s, p) => s + (typeof p.economia === 'number' ? p.economia : 0), 0);
       elQ.innerHTML = `
-        <div class="card-title" style="margin-bottom:14px">🏆 Dívidas Quitadas <span class="badge badge-green">${pagas.length}</span></div>
+        <div class="card-title" style="margin-bottom:14px">🏆 Dívidas Quitadas <span class="badge badge-green">${pagas.length}</span>${economiaTotal > 0.009 ? ` <span class="badge badge-green" style="font-size:9px">economia total ${fmt(economiaTotal)}</span>` : ''}</div>
+        <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>Dívida</th><th class="num">Saldo original</th><th class="num">Taxa/mês</th><th>Data</th><th></th></tr></thead>
-          <tbody>${pagas.map(p => `
+          <thead><tr><th>Dívida</th><th class="num">Saldo original</th><th class="num">Pago à vista</th><th class="num">Desconto</th><th class="num">Economia</th><th>Data</th><th></th></tr></thead>
+          <tbody>${pagas.map(p => {
+            const temDesconto = typeof p.economia === 'number' && p.economia > 0.009;
+            return `
             <tr>
               <td style="color:var(--green)">✓ ${p.nome}</td>
               <td class="num" style="color:var(--text3)">${fmt(p.saldo)}</td>
-              <td class="num" style="color:var(--text3)">${p.taxa}%</td>
+              <td class="num" style="color:var(--text2)">${typeof p.valorPago === 'number' ? fmt(p.valorPago) : '—'}</td>
+              <td class="num" style="color:${temDesconto ? 'var(--green)' : 'var(--text3)'}">${typeof p.descontoPct === 'number' ? p.descontoPct.toFixed(1) + '%' : '—'}</td>
+              <td class="num" style="color:${temDesconto ? 'var(--green)' : 'var(--text3)'}">${typeof p.economia === 'number' ? fmt(p.economia) : '—'}</td>
               <td style="color:var(--text3);font-size:12px">${p.dataPagamento}</td>
               <td><button class="btn btn-danger" onclick="removePaga(${p.id})">×</button></td>
-            </tr>`).join('')}
+            </tr>`;
+          }).join('')}
           </tbody>
-        </table>`;
+        </table>
+        </div>`;
     }
   }
 
@@ -8583,6 +8752,35 @@ async function pwaInstall() {
   </div>
 </div>
 
+<!-- ── Quitar Dívida Modal ─────────────────────── -->
+<div id="quitarModal" onclick="if(event.target===this)closeQuitarModal()">
+  <div class="quitar-box">
+    <div class="quitar-handle"></div>
+    <div class="quitar-icon">🤝</div>
+    <div class="quitar-title">Quitação à Vista</div>
+    <div class="quitar-sub">Registrando a quitação de <strong id="qtDividaNome" style="color:var(--text)">—</strong></div>
+    <div class="quitar-saldo-row">
+      <span>Saldo devedor</span>
+      <strong id="qtSaldoOriginal">—</strong>
+    </div>
+    <div class="quitar-fields">
+      <div class="ocr-field">
+        <label>Valor pago à vista (R$)</label>
+        <input type="number" id="qtValorPago" min="0" step="0.01" oninput="qtFromValor()">
+      </div>
+      <div class="ocr-field">
+        <label>Taxa de desconto (%)</label>
+        <input type="number" id="qtDescontoPct" min="0" max="100" step="0.01" oninput="qtFromPct()">
+      </div>
+    </div>
+    <div class="quitar-preview" id="qtEconomiaPreview"></div>
+    <div class="quitar-actions">
+      <button class="impulso-btn-no" onclick="closeQuitarModal()">Cancelar</button>
+      <button class="impulso-btn-ok" onclick="confirmQuitarDivida()" style="background:linear-gradient(135deg,var(--green),#3d8a5c)">✓ Confirmar Quitação</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── OCR Modal ───────────────────────────────── -->
 <div id="ocrModal">
   <div class="ocr-box">
@@ -8938,6 +9136,32 @@ async function pwaInstall() {
     });
   }
 
+  /* ── 3.5. BOTTOM NAV — OCULTA AO ROLAR (estilo YouTube) ──
+     Rolando para baixo, os ícones somem para dar mais espaço ao
+     conteúdo; rolando para cima (mesmo um pouco), eles voltam. */
+  var _bnLastY = window.scrollY || 0;
+  var _bnTicking = false;
+  function updateBnVisibility() {
+    var nav = document.querySelector('.bottom-nav');
+    _bnTicking = false;
+    if (!nav || window.innerWidth > 768) return;
+    var y = Math.max(window.scrollY || 0, 0);
+    var delta = y - _bnLastY;
+    if (y < 40) {
+      nav.classList.remove('bn-hidden');
+    } else if (delta > 6) {
+      nav.classList.add('bn-hidden');
+    } else if (delta < -6) {
+      nav.classList.remove('bn-hidden');
+    }
+    _bnLastY = y;
+  }
+  function onWindowScroll() {
+    if (_bnTicking) return;
+    _bnTicking = true;
+    requestAnimationFrame(updateBnVisibility);
+  }
+
   /* ── 4. INTEGRAÇÃO COM showSection ─────────────────── */
   var _origShowSection = window.showSection;
   window.showSection = function(id, btn) {
@@ -8946,6 +9170,10 @@ async function pwaInstall() {
     setTimeout(updateBnPill, 60);
     // Ripple em novos botões renderizados
     setTimeout(bindRipple, 200);
+    // Garante que o bottom nav volte a aparecer ao trocar de aba
+    var navEl = document.querySelector('.bottom-nav');
+    if (navEl) navEl.classList.remove('bn-hidden');
+    _bnLastY = window.scrollY || 0;
   };
 
   /* ── 5. INICIALIZAÇÃO ────────────────────────────────── */
@@ -8957,6 +9185,9 @@ async function pwaInstall() {
     // Atualiza pill ao scroll horizontal do bottom nav
     var nav = document.querySelector('.bottom-nav');
     if (nav) nav.addEventListener('scroll', updateBnPill, { passive: true });
+
+    // Mostra/oculta o bottom nav conforme a direção da rolagem da página
+    window.addEventListener('scroll', onWindowScroll, { passive: true });
 
     // Re-bind ripple quando DOM mudar (seções renderizadas dinamicamente)
     var obs = new MutationObserver(function() {

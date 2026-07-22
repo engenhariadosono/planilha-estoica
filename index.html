@@ -4303,7 +4303,7 @@ function _renderDespesasGrupos(despFilt) {
     if (aberto) {
       html += itens.map(d => `
         <tr class="cat-item-row">
-          <td>${d.desc}${d.sub ? `<span class="badge subcat-badge">${d.sub}</span>` : ''}</td>
+          <td>${_esc(d.desc)}${d.sub ? `<span class="badge subcat-badge">${_esc(d.sub)}</span>` : ''}</td>
           <td class="txn-date">${fmtDateShort(d.data)}</td>
           <td class="num hl-red">${fmtD(d.valor)}</td>
           <td><button class="btn btn-danger" onclick="removeDespesa(${d.id})">×</button></td>
@@ -4409,7 +4409,7 @@ function renderOrcamento() {
   br.innerHTML = recFilt.length === 0
     ? `<tr><td colspan="4"><div class="empty-state"><div class="icon">💵</div>${S.receitas.length ? 'Nenhuma receita no período selecionado.' : 'Nenhuma receita registrada.'}</div></td></tr>`
     : recFilt.map(r => `<tr>
-        <td>${r.desc}</td>
+        <td>${_esc(r.desc)}</td>
         <td class="txn-date">${fmtDateShort(r.data)}</td>
         <td class="num hl-green">${fmtD(r.valor)}</td>
         <td><button class="btn btn-danger" onclick="removeReceita(${r.id})">×</button></td>
@@ -4843,7 +4843,7 @@ function renderEmprestimos() {
         <div class="debt-card-name">
           ${isFocus ? '<span class="badge badge-red" style="font-size:9px">MAIOR TAXA</span>' : ''}
           ${p.quitado ? '<span class="badge badge-green" style="font-size:9px">QUITADO</span>' : ''}
-          ${e.nome}
+          ${_esc(e.nome)}
         </div>
         <span class="debt-card-rate">${taxaTxt}</span>
       </div>
@@ -5093,7 +5093,7 @@ function renderDividas() {
         <div class="debt-card-header">
           <div class="debt-card-name">
             ${isFocus ? '<span class="badge badge-red" style="font-size:9px">FOCO</span>' : ''}
-            ${d.nome}
+            ${_esc(d.nome)}
           </div>
           <span class="debt-card-rate">${d.taxa}%/mês</span>
         </div>
@@ -5143,7 +5143,7 @@ function renderDividas() {
             const temDesconto = typeof p.economia === 'number' && p.economia > 0.009;
             return `
             <tr>
-              <td style="color:var(--green)">✓ ${p.nome}</td>
+              <td style="color:var(--green)">✓ ${_esc(p.nome)}</td>
               <td class="num" style="color:var(--text3)">${fmt(p.saldo)}</td>
               <td class="num" style="color:var(--text2)">${typeof p.valorPago === 'number' ? fmt(p.valorPago) : '—'}</td>
               <td class="num" style="color:${temDesconto ? 'var(--green)' : 'var(--text3)'}">${typeof p.descontoPct === 'number' ? p.descontoPct.toFixed(1) + '%' : '—'}</td>
@@ -5226,7 +5226,7 @@ function renderDividas() {
   document.getElementById('payoffSchedule').innerHTML = sched.length === 0 ? '<div class="empty-state">Sem dados</div>' : `
     <div style="overflow-x:auto">
     <table class="data-table">
-      <thead><tr><th>Mês</th>${S.dividas.map(d=>`<th class="num">${d.nome}</th>`).join('')}</tr></thead>
+      <thead><tr><th>Mês</th>${S.dividas.map(d=>`<th class="num">${_esc(d.nome)}</th>`).join('')}</tr></thead>
       <tbody>${sched.map(row => `
         <tr>
           <td><strong>${row.month}</strong></td>
@@ -5659,7 +5659,7 @@ function renderContasUrgentes() {
     return `<div class="urgent-item ${status}">
       <div>
         ${badge}
-        <div class="urgent-item-desc">${c.desc}</div>
+        <div class="urgent-item-desc">${_esc(c.desc)}</div>
         <div class="urgent-item-valor" style="color:${status==='safe'?'var(--gold-bright)':'var(--red)'}">${fmt(c.valor)}</div>
         <div class="urgent-item-proj">${proj}</div>
       </div>
@@ -8073,7 +8073,7 @@ function renderPrimeirosPrincipios() {
     const cfg = PP_VEREDITO_CFG[l.veredito];
     return `<div style="padding:14px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;flex-wrap:wrap">
-        <strong style="font-size:13.5px">${l.cat}</strong>
+        <strong style="font-size:13.5px">${_esc(l.cat)}</strong>
         <span style="font-size:11px;font-weight:800;color:${cfg.color};padding:3px 10px;border-radius:100px;background:${cfg.color}20;white-space:nowrap">${cfg.label}</span>
       </div>
       <div style="font-size:12px;color:var(--text3)">${fmtD(l.valor)}/mês (${l.pct.toFixed(0)}% das despesas)</div>
@@ -8127,13 +8127,13 @@ function renderFuturo() {
         <div class="tl-card" onclick="toggleMarco(${m.id})" id="tl-card-${m.id}">
           <div class="tl-card-header">
             <div>
-              <div class="tl-card-title">${m.icon||'🎯'} ${m.titulo}</div>
+              <div class="tl-card-title">${m.icon||'🎯'} ${_esc(m.titulo)}</div>
               <div class="tl-card-date">${done?'✅ Concluído':dateStr} · ${Math.round(pct)}%</div>
             </div>
             <span style="color:var(--text3);font-size:20px;line-height:1" id="tl-arr-${m.id}">›</span>
           </div>
           <div class="tl-card-body" id="tl-body-${m.id}">
-            <p style="font-size:12px;color:var(--text3);padding-top:10px;line-height:1.55;margin:0 0 8px">${m.desc||''}</p>
+            <p style="font-size:12px;color:var(--text3);padding-top:10px;line-height:1.55;margin:0 0 8px">${_esc(m.desc||'')}</p>
             <div class="tl-prog-bg"><div class="tl-prog-fill" style="width:${pct}%"></div></div>
             <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:${!m.auto||isCustom?'0':'4px'}">
               <span>${fmtD(atual)}</span><span>${fmtD(meta)}</span>

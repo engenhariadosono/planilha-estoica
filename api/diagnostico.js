@@ -100,6 +100,16 @@ export default async function handler(req, res) {
       return res.json({ ok: true, periodo: periodoManual, conteudo });
     }
 
+    // Disparo automático (sem "periodo") gera até 5 diagnósticos de uma vez — é o
+    // caminho mais caro do endpoint. Só o cron da Vercel deve poder acioná-lo:
+    // ela envia esse header automaticamente quando CRON_SECRET está configurado
+    // no projeto. Sem a env var configurada, este caminho fica bloqueado (por
+    // segurança) até alguém definir CRON_SECRET nas Environment Variables da Vercel.
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: 'Não autorizado. Configure a env var CRON_SECRET no projeto Vercel para habilitar o disparo automático.' });
+    }
+
     // Disparo automático via cron diário: decide quais períodos estão "devidos" hoje (horário de Brasília, UTC-3)
     const brasilia = new Date(Date.now() - 3 * 3600000);
     const diaSemana = brasilia.getUTCDay(); // 1 = segunda-feira
